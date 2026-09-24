@@ -5,14 +5,17 @@ import { GreetingSection } from "@/components/dashboard/greeting-section";
 import { HadithOfTheDay } from "@/components/dashboard/hadith-of-the-day";
 import { PrayerTimesCard } from "@/components/dashboard/prayer-times-card";
 import { ProgressOverview } from "@/components/dashboard/progress-overview";
+import { SmartSuggestionsCard } from "@/components/dashboard/smart-suggestions-card";
 import { TodaysHabits } from "@/components/dashboard/todays-habits";
 import { TodaysTasks } from "@/components/dashboard/todays-tasks";
 import { getDashboardData } from "@/services/dashboard/dashboard-service";
 import { hadithService } from "@/services/hadith/hadith-service";
 import { getPrayerDaySummary } from "@/services/prayer";
+import { suggestionEngine } from "@/services/suggestions/suggestion-engine";
 
 export const metadata = {
-  title: "Dashboard",
+  title: "Dashboard — NoorPath",
+  description: "Plan your day around Salah, build better habits, and make time for what matters.",
 };
 
 async function DashboardContent() {
@@ -21,6 +24,16 @@ async function DashboardContent() {
     getPrayerDaySummary({ timezone: "Asia/Dhaka" }),
     hadithService.getHadithOfTheDay(),
   ]);
+
+  const suggestions = await suggestionEngine.generateSuggestions({
+    nextPrayerName: prayerSummary.nextPrayer?.name ?? "Asr",
+    nextPrayerTime: prayerSummary.nextPrayer?.time,
+    pendingTasks: dashboard.tasks.map((t) => ({
+      title: t.title,
+      subject: t.subject,
+      estimatedMinutes: t.estimatedMinutes,
+    })),
+  });
 
   return (
     <div className="space-y-6">
@@ -31,9 +44,10 @@ async function DashboardContent() {
             <HadithOfTheDay hadith={hadith} compact />
           </div>
           <PrayerTimesCard summary={prayerSummary} />
+          <SmartSuggestionsCard suggestion={suggestions} />
         </div>
 
-        <div className="hidden lg:block">
+        <div className="hidden lg:block lg:sticky lg:top-6">
           <HadithOfTheDay hadith={hadith} />
         </div>
       </div>

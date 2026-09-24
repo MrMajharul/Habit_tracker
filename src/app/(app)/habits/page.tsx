@@ -1,5 +1,4 @@
 import { HabitsPageClient } from "@/components/habits/habits-page-client";
-import type { DashboardHabit } from "@/types";
 
 export const metadata = { title: "Habits" };
 

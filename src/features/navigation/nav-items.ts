@@ -6,7 +6,6 @@ import {
   Clock,
   Home,
   Moon,
-  MoreHorizontal,
   ScrollText,
   Settings,
   Sparkles,

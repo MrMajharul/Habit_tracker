@@ -83,14 +83,6 @@ const CATEGORY_COLORS: Record<HabitCategory, string> = {
   other: "bg-muted text-muted-foreground border-border",
 };
 
-const SEED_HABITS: Habit[] = [
-  { id: "1", name: "Morning Qur'an", icon: "book-open", category: "islamic", completed: true, target: "20 pages", streak: 7, frequency: "daily" },
-  { id: "2", name: "Morning Adhkar", icon: "heart-handshake", category: "islamic", completed: true, target: "Complete set", streak: 12, frequency: "daily" },
-  { id: "3", name: "Exercise", icon: "dumbbell", category: "health", completed: false, target: "30 minutes", streak: 3, frequency: "daily" },
-  { id: "4", name: "Study Session", icon: "graduation-cap", category: "study", completed: false, target: "2 hours", streak: 5, frequency: "daily" },
-  { id: "5", name: "Read Book", icon: "book-marked", category: "personal", completed: false, target: "10 pages", streak: 1, frequency: "daily" },
-];
-
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const habitSchema = z.object({

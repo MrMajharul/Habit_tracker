@@ -174,7 +174,8 @@ export default function AnalyticsPage() {
         <CardContent>
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: 28 }).map((_, i) => {
-              const activity = Math.random();
+              const seedLevels = [0.9, 0.4, 0.7, 0.2, 0.85, 0.6, 0.3, 0.95, 0.5, 0.8, 0.1, 0.75, 0.9, 0.4];
+              const activity = seedLevels[i % seedLevels.length];
               return (
                 <div
                   key={i}
