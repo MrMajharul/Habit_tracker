@@ -1,6 +1,6 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { standardSchemaResolver as zodResolver } from "@hookform/resolvers/standard-schema";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -62,7 +62,8 @@ export function RegisterForm() {
       }
 
       if (data.user) {
-        await supabase.from("profiles").upsert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase.from("profiles") as any).upsert({
           id: data.user.id,
           name: values.name,
           email: values.email,

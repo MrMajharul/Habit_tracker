@@ -1,5 +1,6 @@
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 import type {
   DashboardHabit,
   DashboardTask,
@@ -13,6 +14,8 @@ import {
   MOCK_PROGRESS,
   MOCK_TASKS,
 } from "./mock-dashboard-data";
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export interface DashboardData {
   profile: UserProfile;
@@ -56,11 +59,13 @@ export async function getDashboardData(): Promise<DashboardData> {
     };
   }
 
-  const { data: profile } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+
+  const profile = data as ProfileRow | null;
 
   return {
     profile: {

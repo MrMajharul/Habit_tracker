@@ -1,12 +1,7 @@
-import { ComingSoon } from "@/components/shared/coming-soon";
+import { FocusPageClient } from "@/components/focus/focus-page-client";
 
-export const metadata = { title: "Focus" };
+export const metadata = { title: "Focus Timer" };
 
 export default function FocusPage() {
-  return (
-    <ComingSoon
-      title="Focus Timer"
-      description="Pomodoro and custom focus sessions with study time tracking arrive in Phase 3."
-    />
-  );
+  return <FocusPageClient />;
 }

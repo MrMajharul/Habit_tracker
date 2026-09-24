@@ -1,12 +1,7 @@
-import { ComingSoon } from "@/components/shared/coming-soon";
+import { StudyPageClient } from "@/components/study/study-page-client";
 
 export const metadata = { title: "Study & Work" };
 
 export default function StudyPage() {
-  return (
-    <ComingSoon
-      title="Study & Work"
-      description="Subjects, tasks, and prayer-anchored planning — Phase 3."
-    />
-  );
+  return <StudyPageClient />;
 }

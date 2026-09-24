@@ -1,7 +1,10 @@
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import { MOCK_PROFILE } from "@/services/dashboard/mock-dashboard-data";
+import type { Database } from "@/types/database";
 import type { UserProfile } from "@/types";
+
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
   if (!isSupabaseConfigured || isDevAuthBypass) {
@@ -15,11 +18,13 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
 
   if (!user) return null;
 
-  const { data: profile } = await supabase
+  const { data } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+
+  const profile = data as ProfileRow | null;
 
   return {
     id: user.id,
