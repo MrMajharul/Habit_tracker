@@ -1,16 +1,11 @@
 import { HabitsPageClient } from "@/components/habits/habits-page-client";
+import { INITIAL_HABITS } from "@/services/habits/habit-service";
 
-export const metadata = { title: "Habits" };
-
-// Seed mock data — real habits will come from Supabase in Phase 2 backend integration
-const SEED_HABITS = [
-  { id: "1", name: "Morning Qur'an", icon: "book-open", category: "islamic" as const, completed: true, target: "20 pages", streak: 7, frequency: "daily" as const },
-  { id: "2", name: "Morning Adhkar", icon: "heart-handshake", category: "islamic" as const, completed: true, target: "Complete set", streak: 12, frequency: "daily" as const },
-  { id: "3", name: "Exercise", icon: "dumbbell", category: "health" as const, completed: false, target: "30 minutes", streak: 3, frequency: "daily" as const },
-  { id: "4", name: "Study Session", icon: "graduation-cap", category: "study" as const, completed: false, target: "2 hours", streak: 5, frequency: "daily" as const },
-  { id: "5", name: "Read Book", icon: "book-marked", category: "personal" as const, completed: false, target: "10 pages", streak: 1, frequency: "daily" as const },
-];
+export const metadata = {
+  title: "Habits — NoorPath",
+  description: "Build steady consistency around Salah, one day at a time.",
+};
 
 export default function HabitsPage() {
-  return <HabitsPageClient initialHabits={SEED_HABITS} />;
+  return <HabitsPageClient initialHabits={INITIAL_HABITS} />;
 }

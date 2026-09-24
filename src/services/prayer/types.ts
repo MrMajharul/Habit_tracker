@@ -16,7 +16,7 @@ export interface PrayerDaySummary {
     city: string;
     country: string;
   };
-  /** Indicates data is from a mock provider, not live calculation */
+  /** Indicates whether data is from a live calculation or mock provider */
   isMockData: boolean;
 }
 
@@ -27,4 +27,12 @@ export interface PrayerSettings {
   calculationMethod: string;
   asrMadhhab: "standard" | "hanafi";
   manualOffsetMinutes: number;
+  city?: string;
+  country?: string;
+  fajrAdjustment?: number;
+  sunriseAdjustment?: number;
+  dhuhrAdjustment?: number;
+  asrAdjustment?: number;
+  maghribAdjustment?: number;
+  ishaAdjustment?: number;
 }

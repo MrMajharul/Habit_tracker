@@ -7,6 +7,14 @@ export type HabitCategory =
   | "family"
   | "other";
 
+export type PrayerAnchor =
+  | "none"
+  | "fajr"
+  | "dhuhr"
+  | "asr"
+  | "maghrib"
+  | "isha";
+
 export type TaskStatus = "todo" | "in_progress" | "completed";
 
 export type TaskPriority = "low" | "medium" | "high";
@@ -29,6 +37,48 @@ export interface DashboardHabit {
   completed: boolean;
   target?: string;
   color?: string;
+  streak?: number;
+  prayerAnchor?: PrayerAnchor;
+}
+
+export interface Habit {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  icon: string;
+  category: HabitCategory;
+  frequency: "daily" | "weekly";
+  targetValue?: number;
+  targetUnit?: string;
+  reminderEnabled?: boolean;
+  reminderTime?: string;
+  prayerAnchor?: PrayerAnchor;
+  startDate?: string;
+  isActive: boolean;
+  streak?: number;
+  completedToday?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface HabitLog {
+  id: string;
+  habitId: string;
+  userId: string;
+  date: string;
+  completed: boolean;
+  value?: number;
+  completedAt?: string;
+}
+
+export interface PrayerLog {
+  id: string;
+  userId: string;
+  prayer: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha";
+  date: string;
+  status: "completed" | "missed" | "late";
+  completedAt?: string;
 }
 
 export interface DashboardTask {

@@ -33,6 +33,12 @@ export interface SuggestionContext {
   minutesUntilNextPrayer?: number;
   currentPrayerName?: string;
   uncompletedHabits?: string[];
+  userHabits?: Array<{
+    name: string;
+    prayerAnchor?: string;
+    completed?: boolean;
+    icon?: string;
+  }>;
   pendingTasks?: Array<{
     title: string;
     subject?: string;

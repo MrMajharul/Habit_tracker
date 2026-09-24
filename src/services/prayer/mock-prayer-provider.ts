@@ -59,11 +59,16 @@ export class MockPrayerProvider implements PrayerTimeProvider {
   async getPrayerTimes(
     settings: PrayerSettings,
     date = new Date(),
+    completedPrayers?: PrayerName[],
   ): Promise<PrayerDaySummary> {
     const names = Object.keys(MOCK_SCHEDULE) as PrayerName[];
-    const prayers = names.map((name) =>
-      buildPrayerTime(name, date, settings.manualOffsetMinutes),
-    );
+    const prayers = names.map((name) => {
+      const p = buildPrayerTime(name, date, settings.manualOffsetMinutes);
+      if (completedPrayers) {
+        p.completed = completedPrayers.includes(name);
+      }
+      return p;
+    });
 
     const now = new Date();
     let nextPrayer = resolveNextPrayer(prayers, now);

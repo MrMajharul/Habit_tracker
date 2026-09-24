@@ -28,6 +28,12 @@ async function DashboardContent() {
   const suggestions = await suggestionEngine.generateSuggestions({
     nextPrayerName: prayerSummary.nextPrayer?.name ?? "Asr",
     nextPrayerTime: prayerSummary.nextPrayer?.time,
+    userHabits: dashboard.habits.map((h) => ({
+      name: h.name,
+      prayerAnchor: h.prayerAnchor,
+      completed: h.completed,
+      icon: h.icon,
+    })),
     pendingTasks: dashboard.tasks.map((t) => ({
       title: t.title,
       subject: t.subject,
