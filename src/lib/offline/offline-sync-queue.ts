@@ -11,7 +11,7 @@ export interface OfflineAction {
   timestamp: number;
 }
 
-const QUEUE_KEY = "istiqamah_offline_sync_queue";
+const QUEUE_KEY = "istiqamaah_offline_sync_queue";
 const LEGACY_QUEUE_KEY = "noorpath_offline_sync_queue";
 
 export function getOfflineQueue(): OfflineAction[] {

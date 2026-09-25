@@ -74,10 +74,10 @@ export function SettingsPageClient() {
     // Load persisted preferences from localStorage if present
     try {
       const savedLang =
-        localStorage.getItem("istiqamah_lang") ??
+        localStorage.getItem("istiqamaah_lang") ??
         localStorage.getItem("noorpath_lang");
       const savedNotifs =
-        localStorage.getItem("istiqamah_notifs") ??
+        localStorage.getItem("istiqamaah_notifs") ??
         localStorage.getItem("noorpath_notifs");
       if (savedLang === "en" || savedLang === "bn" || savedNotifs) {
         setTimeout(() => {
@@ -97,7 +97,7 @@ export function SettingsPageClient() {
   const handleLanguageChange = (lang: "en" | "bn") => {
     setLanguage(lang);
     try {
-      localStorage.setItem("istiqamah_lang", lang);
+      localStorage.setItem("istiqamaah_lang", lang);
     } catch {
       // Ignore storage errors
     }
@@ -110,7 +110,7 @@ export function SettingsPageClient() {
     const updated = { ...notifications, [key]: !notifications[key] };
     setNotifications(updated);
     try {
-      localStorage.setItem("istiqamah_notifs", JSON.stringify(updated));
+      localStorage.setItem("istiqamaah_notifs", JSON.stringify(updated));
     } catch {
       // Ignore storage errors
     }
@@ -128,7 +128,7 @@ export function SettingsPageClient() {
       language,
       prayerSettings,
       notifications,
-      note: "Istiqamah User Data Export",
+      note: "Istiqamaah User Data Export",
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: "application/json",
@@ -136,7 +136,7 @@ export function SettingsPageClient() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `istiqamah-export-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `istiqamaah-export-${new Date().toISOString().split("T")[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -461,7 +461,7 @@ export function SettingsPageClient() {
       {/* About */}
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          About Istiqamah
+          About Istiqamaah
         </h2>
         <Card className="border-emerald-600/20 bg-emerald-500/5">
           <CardContent className="p-5 space-y-2">
@@ -470,7 +470,7 @@ export function SettingsPageClient() {
               <span>Built with Ihsan for the Ummah</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Istiqamah is a calm Muslim daily-life companion. No advertisements, no distracting algorithms,
+              Istiqamaah is a calm Muslim daily-life companion. No advertisements, no distracting algorithms,
               no public religious leaderboards. All Hadith and Qur&apos;anic texts are verified from source-controlled collections.
             </p>
             <div className="flex flex-wrap gap-2 pt-2">

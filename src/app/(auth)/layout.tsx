@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { APP_NAME } from "@/lib/constants";
+import { AppLogo } from "@/components/ui/app-logo";
 
 export default function AuthLayout({
   children,
@@ -10,16 +10,21 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <header className="flex h-16 items-center px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-sm font-semibold">N</span>
-          </div>
-          <span className="font-semibold">{APP_NAME}</span>
+        <Link href="/" className="flex items-center">
+          <AppLogo size="md" />
         </Link>
       </header>
+
       <main className="flex flex-1 items-center justify-center px-4 pb-12">
         {children}
       </main>
+
+      {/* Footer tagline — only visible on auth pages */}
+      <footer className="flex items-center justify-center pb-8 px-6">
+        <p className="text-xs text-muted-foreground text-center">
+          Balance your Deen. Organize your life.
+        </p>
+      </footer>
     </div>
   );
 }

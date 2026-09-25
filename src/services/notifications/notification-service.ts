@@ -33,7 +33,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   },
 };
 
-const PREFS_KEY = "istiqamah_notification_prefs";
+const PREFS_KEY = "istiqamaah_notification_prefs";
 const LEGACY_PREFS_KEY = "noorpath_notification_prefs";
 
 export interface NotificationProvider {

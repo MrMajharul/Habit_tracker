@@ -1,4 +1,4 @@
-# Istiqamah — Muslim Habit & Productivity App
+# Istiqamaah — Muslim Habit & Productivity App
 
 Plan your day around Salah, build better habits, and make time for what matters.
 

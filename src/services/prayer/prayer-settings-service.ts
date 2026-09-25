@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 import type { PrayerSettings } from "./types";
 
-export const PRAYER_SETTINGS_STORAGE_KEY = "istiqamah_prayer_settings";
+export const PRAYER_SETTINGS_STORAGE_KEY = "istiqamaah_prayer_settings";
 export const LEGACY_PRAYER_SETTINGS_STORAGE_KEY = "noorpath_prayer_settings";
 
 export const DEFAULT_PRAYER_SETTINGS: PrayerSettings = {

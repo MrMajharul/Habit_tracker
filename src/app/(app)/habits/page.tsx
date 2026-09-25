@@ -2,7 +2,7 @@ import { HabitsPageClient } from "@/components/habits/habits-page-client";
 import { INITIAL_HABITS } from "@/services/habits/habit-service";
 
 export const metadata = {
-  title: "Habits — Istiqamah",
+  title: "Habits — Istiqamaah",
   description: "Build steady consistency around Salah, one day at a time.",
 };
 

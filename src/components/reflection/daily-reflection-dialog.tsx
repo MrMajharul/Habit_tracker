@@ -24,7 +24,7 @@ interface DailyReflectionData {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "istiqamah_daily_reflection";
+const STORAGE_KEY = "istiqamaah_daily_reflection";
 const LEGACY_STORAGE_KEY = "noorpath_daily_reflection";
 
 export function DailyReflectionDialog() {

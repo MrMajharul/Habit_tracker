@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { AppLogo } from "@/components/ui/app-logo";
 import { cn } from "@/lib/utils";
-import { APP_NAME } from "@/lib/constants";
 import { mainNavItems } from "@/features/navigation/nav-items";
 
 export function AppSidebar() {
@@ -13,14 +13,10 @@ export function AppSidebar() {
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar">
-      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <span className="text-sm font-semibold">N</span>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-sidebar-foreground">{APP_NAME}</p>
-          <p className="text-xs text-muted-foreground">Daily companion</p>
-        </div>
+      <div className="flex h-16 items-center border-b border-sidebar-border px-5">
+        <Link href="/dashboard">
+          <AppLogo size="sm" />
+        </Link>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">

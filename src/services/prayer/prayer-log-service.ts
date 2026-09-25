@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 import type { PrayerName } from "./types";
 
-const PRAYER_LOGS_PREFIX = "istiqamah_prayer_logs_";
+const PRAYER_LOGS_PREFIX = "istiqamaah_prayer_logs_";
 const LEGACY_PRAYER_LOGS_PREFIX = "noorpath_prayer_logs_";
 
 export function getTodayDateString(d = new Date()): string {

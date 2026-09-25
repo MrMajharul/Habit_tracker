@@ -1,5 +1,5 @@
-// Istiqamah Service Worker
-const CACHE_NAME = "istiqamah-v1";
+// Istiqamaah Service Worker
+const CACHE_NAME = "istiqamaah-v1";
 const OFFLINE_URL = "/dashboard";
 
 const STATIC_ASSETS = [

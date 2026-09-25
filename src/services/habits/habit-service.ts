@@ -7,9 +7,9 @@ import type { Database } from "@/types/database";
 import type { DashboardHabit, Habit, HabitCategory, PrayerAnchor } from "@/types";
 import { calculateHabitStreak, type StreakStats } from "./streak-calculator";
 
-const HABITS_STORE_KEY = "istiqamah_habits_data";
+const HABITS_STORE_KEY = "istiqamaah_habits_data";
 const LEGACY_HABITS_STORE_KEY = "noorpath_habits_data";
-const HABIT_LOGS_STORE_KEY = "istiqamah_habit_logs_data";
+const HABIT_LOGS_STORE_KEY = "istiqamaah_habit_logs_data";
 const LEGACY_HABIT_LOGS_STORE_KEY = "noorpath_habit_logs_data";
 
 export function getTodayDateString(d = new Date()): string {

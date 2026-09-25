@@ -14,7 +14,7 @@ interface HadithPageClientProps {
   initialHadiths: HadithRecord[];
 }
 
-const BOOKMARK_KEY = "istiqamah_hadith_bookmarks";
+const BOOKMARK_KEY = "istiqamaah_hadith_bookmarks";
 const LEGACY_BOOKMARK_KEY = "noorpath_hadith_bookmarks";
 
 export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
