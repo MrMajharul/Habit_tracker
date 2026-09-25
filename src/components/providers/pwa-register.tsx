@@ -8,10 +8,10 @@ export function PwaRegister() {
       navigator.serviceWorker
         .register("/sw.js")
         .then((reg) => {
-          console.log("NoorPath ServiceWorker registered:", reg.scope);
+          console.log("Istiqamah ServiceWorker registered:", reg.scope);
         })
         .catch((err) => {
-          console.warn("NoorPath ServiceWorker registration failed:", err);
+          console.warn("Istiqamah ServiceWorker registration failed:", err);
         });
     }
   }, []);

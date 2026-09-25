@@ -1,5 +1,5 @@
-// NoorPath Service Worker
-const CACHE_NAME = "noorpath-v1";
+// Istiqamah Service Worker
+const CACHE_NAME = "istiqamah-v1";
 const OFFLINE_URL = "/dashboard";
 
 const STATIC_ASSETS = [

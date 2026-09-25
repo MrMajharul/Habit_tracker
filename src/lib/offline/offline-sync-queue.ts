@@ -11,12 +11,15 @@ export interface OfflineAction {
   timestamp: number;
 }
 
-const QUEUE_KEY = "noorpath_offline_sync_queue";
+const QUEUE_KEY = "istiqamah_offline_sync_queue";
+const LEGACY_QUEUE_KEY = "noorpath_offline_sync_queue";
 
 export function getOfflineQueue(): OfflineAction[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(QUEUE_KEY);
+    const raw =
+      localStorage.getItem(QUEUE_KEY) ??
+      localStorage.getItem(LEGACY_QUEUE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];

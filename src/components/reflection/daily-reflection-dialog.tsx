@@ -24,7 +24,8 @@ interface DailyReflectionData {
   updatedAt: string;
 }
 
-const STORAGE_KEY = "noorpath_daily_reflection";
+const STORAGE_KEY = "istiqamah_daily_reflection";
+const LEGACY_STORAGE_KEY = "noorpath_daily_reflection";
 
 export function DailyReflectionDialog() {
   const [open, setOpen] = React.useState(false);
@@ -35,7 +36,9 @@ export function DailyReflectionDialog() {
 
   React.useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved =
+        localStorage.getItem(STORAGE_KEY) ??
+        localStorage.getItem(LEGACY_STORAGE_KEY);
       if (saved) {
         const data: DailyReflectionData = JSON.parse(saved);
         setTimeout(() => {

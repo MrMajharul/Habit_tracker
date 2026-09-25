@@ -14,7 +14,7 @@ import { getPrayerDaySummary } from "@/services/prayer";
 import { suggestionEngine } from "@/services/suggestions/suggestion-engine";
 
 export const metadata = {
-  title: "Dashboard — NoorPath",
+  title: "Dashboard — Istiqamah",
   description: "Plan your day around Salah, build better habits, and make time for what matters.",
 };
 

@@ -1,7 +1,7 @@
 import { SettingsPageClient } from "@/components/settings/settings-page-client";
 
 export const metadata = {
-  title: "Settings — NoorPath",
+  title: "Settings — Istiqamah",
   description: "Customize your prayer calculation, reminders, theme, and profile.",
 };
 

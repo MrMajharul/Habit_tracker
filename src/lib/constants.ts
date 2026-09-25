@@ -1,4 +1,4 @@
-export const APP_NAME = "NoorPath";
+export const APP_NAME = "Istiqamah";
 export const APP_DESCRIPTION =
   "Plan your day around Salah, build better habits, and make time for what matters.";
 

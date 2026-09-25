@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 import type { PrayerName } from "./types";
 
-const PRAYER_LOGS_PREFIX = "noorpath_prayer_logs_";
+const PRAYER_LOGS_PREFIX = "istiqamah_prayer_logs_";
+const LEGACY_PRAYER_LOGS_PREFIX = "noorpath_prayer_logs_";
 
 export function getTodayDateString(d = new Date()): string {
   return format(d, "yyyy-MM-dd");
@@ -24,7 +25,9 @@ export function getLocalPrayerLogs(dateStr = getTodayDateString()): Record<Praye
   if (typeof window === "undefined") return fallback;
 
   try {
-    const raw = localStorage.getItem(`${PRAYER_LOGS_PREFIX}${dateStr}`);
+    const raw =
+      localStorage.getItem(`${PRAYER_LOGS_PREFIX}${dateStr}`) ??
+      localStorage.getItem(`${LEGACY_PRAYER_LOGS_PREFIX}${dateStr}`);
     if (!raw) return fallback;
     return { ...fallback, ...JSON.parse(raw) };
   } catch {

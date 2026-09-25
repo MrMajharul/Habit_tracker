@@ -33,7 +33,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   },
 };
 
-const PREFS_KEY = "noorpath_notification_prefs";
+const PREFS_KEY = "istiqamah_notification_prefs";
+const LEGACY_PREFS_KEY = "noorpath_notification_prefs";
 
 export interface NotificationProvider {
   requestPermission(): Promise<NotificationPermissionState>;
@@ -97,7 +98,9 @@ export class NotificationService {
   getPreferences(): NotificationPreferences {
     if (typeof window === "undefined") return DEFAULT_NOTIFICATION_PREFERENCES;
     try {
-      const raw = localStorage.getItem(PREFS_KEY);
+      const raw =
+        localStorage.getItem(PREFS_KEY) ??
+        localStorage.getItem(LEGACY_PREFS_KEY);
       if (!raw) return DEFAULT_NOTIFICATION_PREFERENCES;
       return { ...DEFAULT_NOTIFICATION_PREFERENCES, ...JSON.parse(raw) };
     } catch {

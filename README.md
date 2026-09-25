@@ -1,4 +1,4 @@
-# NoorPath — Muslim Habit & Productivity App
+# Istiqamah — Muslim Habit & Productivity App
 
 Plan your day around Salah, build better habits, and make time for what matters.
 

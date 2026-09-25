@@ -14,7 +14,8 @@ interface HadithPageClientProps {
   initialHadiths: HadithRecord[];
 }
 
-const BOOKMARK_KEY = "noorpath_hadith_bookmarks";
+const BOOKMARK_KEY = "istiqamah_hadith_bookmarks";
+const LEGACY_BOOKMARK_KEY = "noorpath_hadith_bookmarks";
 
 export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -24,7 +25,9 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
 
   React.useEffect(() => {
     try {
-      const saved = localStorage.getItem(BOOKMARK_KEY);
+      const saved =
+        localStorage.getItem(BOOKMARK_KEY) ??
+        localStorage.getItem(LEGACY_BOOKMARK_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         setTimeout(() => setBookmarkedIds(parsed), 0);

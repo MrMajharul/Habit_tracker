@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 import type { PrayerSettings } from "./types";
 
-export const PRAYER_SETTINGS_STORAGE_KEY = "noorpath_prayer_settings";
+export const PRAYER_SETTINGS_STORAGE_KEY = "istiqamah_prayer_settings";
+export const LEGACY_PRAYER_SETTINGS_STORAGE_KEY = "noorpath_prayer_settings";
 
 export const DEFAULT_PRAYER_SETTINGS: PrayerSettings = {
   latitude: 23.8103,
@@ -26,7 +27,9 @@ export function getLocalPrayerSettings(): PrayerSettings {
   if (typeof window === "undefined") return DEFAULT_PRAYER_SETTINGS;
 
   try {
-    const raw = localStorage.getItem(PRAYER_SETTINGS_STORAGE_KEY);
+    const raw =
+      localStorage.getItem(PRAYER_SETTINGS_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_PRAYER_SETTINGS_STORAGE_KEY);
     if (!raw) return DEFAULT_PRAYER_SETTINGS;
     return { ...DEFAULT_PRAYER_SETTINGS, ...JSON.parse(raw) };
   } catch {
