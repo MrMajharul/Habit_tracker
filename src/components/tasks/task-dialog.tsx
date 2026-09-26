@@ -1,5 +1,6 @@
 "use client";
 
+import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -64,8 +65,8 @@ function TaskFormContent({
   const [status, setStatus] = useState<TaskStatus>(taskToEdit?.status ?? "TODO");
   const [dueDate, setDueDate] = useState(
     taskToEdit?.dueDate
-      ? taskToEdit.dueDate.slice(0, 10)
-      : new Date().toISOString().slice(0, 10),
+      ? format(new Date(taskToEdit.dueDate), "yyyy-MM-dd")
+      : format(new Date(), "yyyy-MM-dd"),
   );
   const [estimatedMinutes, setEstimatedMinutes] = useState(
     taskToEdit?.estimatedMinutes ?? 25,
@@ -78,7 +79,11 @@ function TaskFormContent({
 
     try {
       setIsSubmitting(true);
-      const parsedDueDate = dueDate ? `${dueDate}T23:59:59.000Z` : null;
+      let parsedDueDate: string | null = null;
+      if (dueDate) {
+        const [year, month, day] = dueDate.split("-").map(Number);
+        parsedDueDate = new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+      }
 
       if (taskToEdit) {
         const updated = await updateTaskFn(taskToEdit.id, {

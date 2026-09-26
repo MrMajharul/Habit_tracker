@@ -128,14 +128,20 @@ export class PlanningService {
 
     // Planned session exceeds available window before next prayer!
     const suggestedShorter =
-      diffMinutes >= 12 ? Math.min(diffMinutes - 3, Math.floor((diffMinutes - 2) / 5) * 5) : 10;
+      diffMinutes >= 12
+        ? Math.min(diffMinutes - 3, Math.floor((diffMinutes - 2) / 5) * 5)
+        : diffMinutes >= 8
+          ? 5
+          : undefined;
 
     return {
       fits: false,
       minutesUntilNextPrayer: diffMinutes,
       nextPrayerName,
-      suggestedShorterDuration: Math.max(5, suggestedShorter),
-      warningMessage: `Your next prayer (${nextPrayerName}) is in ${diffMinutes} minutes. Would you like to start a shorter ${suggestedShorter}-minute focus session?`,
+      suggestedShorterDuration: suggestedShorter,
+      warningMessage: suggestedShorter
+        ? `Your next prayer (${nextPrayerName}) is in ${diffMinutes} minutes. Would you like to start a shorter ${suggestedShorter}-minute focus session?`
+        : `Your next prayer (${nextPrayerName}) is in ${diffMinutes} minutes. It's time to prepare for Salah with fresh Wudu.`,
     };
   }
 }

@@ -147,7 +147,31 @@ export function SettingsPageClient() {
   const handleResetData = () => {
     if (confirm("Reset local preferences to default?")) {
       try {
-        localStorage.clear();
+        const preferenceKeys = [
+          "istiqamaah_lang",
+          "noorpath_lang",
+          "istiqamaah_notifs",
+          "noorpath_notifs",
+          "istiqamaah_prayer_settings",
+          "noorpath_prayer_settings",
+          "istiqamaah_notification_prefs",
+          "noorpath_notification_prefs",
+        ];
+        for (const key of preferenceKeys) {
+          localStorage.removeItem(key);
+        }
+        setLanguage("en");
+        setNotifications({
+          fajr: true,
+          dhuhr: true,
+          asr: true,
+          maghrib: true,
+          isha: true,
+          quranReminder: true,
+          habitReminders: true,
+          dailyReview: false,
+          quietHours: true,
+        });
       } catch {
         // Ignore
       }

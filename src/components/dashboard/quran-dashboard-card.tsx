@@ -90,7 +90,7 @@ export function QuranDashboardCard() {
         {/* Continue reading */}
         {progress.lastPosition ? (
           <Link
-            href="/quran"
+            href={`/quran?surah=${progress.lastPosition.surahNumber}`}
             className="flex items-center justify-between rounded-xl border border-border/70 bg-card px-3 py-2 text-xs transition-colors hover:border-primary/30 hover:bg-primary/5"
           >
             <div className="space-y-0.5">

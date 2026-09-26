@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { format } from "date-fns";
 
 // ─── Mock localStorage & crypto ─────────────────────────────────────────────
 
@@ -114,10 +115,10 @@ describe("Qur'an Progress & Streaks", () => {
     it("should calculate weekly progress", () => {
       // Create sessions on different days this week
       const today = new Date();
-      const todayStr = today.toISOString().slice(0, 10);
+      const todayStr = format(today, "yyyy-MM-dd");
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      const yesterdayStr = format(yesterday, "yyyy-MM-dd");
 
       quranService.createReadingSession({
         userId: "u",
@@ -155,7 +156,7 @@ describe("Qur'an Progress & Streaks", () => {
       for (let i = 0; i < 5; i++) {
         const d = new Date(today);
         d.setDate(d.getDate() - i);
-        dates.push(d.toISOString().slice(0, 10));
+        dates.push(format(d, "yyyy-MM-dd"));
       }
 
       dates.forEach((date) => {
@@ -184,7 +185,7 @@ describe("Qur'an Progress & Streaks", () => {
         startAyah: 1,
         endAyah: 7,
         minutesRead: 5,
-        readingDate: today.toISOString().slice(0, 10),
+        readingDate: format(today, "yyyy-MM-dd"),
       });
 
       // Read 3 days ago (skip yesterday and day before)
@@ -196,7 +197,7 @@ describe("Qur'an Progress & Streaks", () => {
         startAyah: 1,
         endAyah: 10,
         minutesRead: 10,
-        readingDate: threeDaysAgo.toISOString().slice(0, 10),
+        readingDate: format(threeDaysAgo, "yyyy-MM-dd"),
       });
 
       const streak = quranProgressService.getStreakInfo();
@@ -213,7 +214,7 @@ describe("Qur'an Progress & Streaks", () => {
         startAyah: 1,
         endAyah: 7,
         minutesRead: 5,
-        readingDate: tomorrow.toISOString().slice(0, 10),
+        readingDate: format(tomorrow, "yyyy-MM-dd"),
       });
 
       const streak = quranProgressService.getStreakInfo();
@@ -229,7 +230,7 @@ describe("Qur'an Progress & Streaks", () => {
         startAyah: 1,
         endAyah: 10,
         minutesRead: 15,
-        readingDate: new Date().toISOString().slice(0, 10),
+        readingDate: format(new Date(), "yyyy-MM-dd"),
       });
 
       const summary = quranProgressService.getProgressSummary();

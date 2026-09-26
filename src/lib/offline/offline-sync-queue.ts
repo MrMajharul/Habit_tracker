@@ -5,6 +5,7 @@ export type OfflineActionType =
   | "LOG_HABIT"
   | "LOG_PRAYER"
   | "CREATE_HABIT"
+  | "delete_habit"
   | "create_task"
   | "update_task"
   | "delete_task"
@@ -84,6 +85,12 @@ export function enqueueOfflineAction(action: Omit<OfflineAction, "id" | "timesta
     filtered = queue.filter((a) => a.payload?.id !== action.payload?.id);
   } else if (action.type === "delete_subject") {
     filtered = queue.filter((a) => a.payload?.id !== action.payload?.id);
+  } else if (action.type === "delete_habit") {
+    filtered = queue.filter(
+      (a) =>
+        a.payload?.id !== action.payload?.id &&
+        !(a.type === "CREATE_HABIT" && a.payload?.id === action.payload?.id),
+    );
   }
 
   filtered.push(newAction);
@@ -134,6 +141,34 @@ export async function flushOfflineQueue(): Promise<{
           },
           { onConflict: "habit_id,date" },
         );
+        successCount++;
+      } else if (item.type === "CREATE_HABIT") {
+        const h = item.payload;
+        await supabase.from("habits").upsert({
+          id: h.id,
+          user_id: user.id,
+          name: h.name,
+          description: h.description || null,
+          icon: h.icon,
+          category: h.category,
+          frequency: h.frequency,
+          target_value: h.targetValue ?? 1,
+          target_unit: h.targetUnit || null,
+          reminder_enabled: h.reminderEnabled ?? false,
+          reminder_time: h.reminderTime || null,
+          prayer_anchor: h.prayerAnchor || "none",
+          start_date: h.startDate || new Date().toISOString().split("T")[0],
+          is_active: h.isActive ?? true,
+          created_at: h.createdAt || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+        successCount++;
+      } else if (item.type === "delete_habit") {
+        await supabase
+          .from("habits")
+          .delete()
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
         successCount++;
       } else if (item.type === "LOG_PRAYER") {
         const { prayer, completed, dateStr } = item.payload;

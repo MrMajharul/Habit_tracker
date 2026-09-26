@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { addDays, format, isSameDay, parseISO, startOfDay } from "date-fns";
 
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { enqueueOfflineAction } from "@/lib/offline/offline-sync-queue";
@@ -121,31 +121,26 @@ export class TaskService {
     if (task.status === "COMPLETED" || task.status === "CANCELLED" || !task.dueDate) {
       return false;
     }
-    const due = new Date(task.dueDate).getTime();
-    const todayEnd = new Date().setHours(0, 0, 0, 0);
-    return due < todayEnd;
+    // Date-only strings (e.g. "2026-09-25") are overdue if before today's local start of day
+    if (task.dueDate.length === 10) {
+      return parseISO(task.dueDate).getTime() < startOfDay(new Date()).getTime();
+    }
+    // Full ISO timestamps with time are overdue once their specified time has passed
+    return new Date(task.dueDate).getTime() < Date.now();
   }
 
   isDueToday(task: Task): boolean {
     if (!task.dueDate) return false;
-    const due = new Date(task.dueDate);
-    const today = new Date();
-    return (
-      due.getFullYear() === today.getFullYear() &&
-      due.getMonth() === today.getMonth() &&
-      due.getDate() === today.getDate()
-    );
+    return isSameDay(parseISO(task.dueDate), new Date());
   }
 
   isUpcoming(task: Task): boolean {
     if (task.status === "COMPLETED" || task.status === "CANCELLED" || !task.dueDate) {
       return false;
     }
-    const due = new Date(task.dueDate);
-    const tomorrowStart = new Date();
-    tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-    tomorrowStart.setHours(0, 0, 0, 0);
-    return due.getTime() >= tomorrowStart.getTime();
+    const tomorrowStart = startOfDay(addDays(new Date(), 1));
+    const dueDateParsed = parseISO(task.dueDate);
+    return dueDateParsed.getTime() >= tomorrowStart.getTime();
   }
 
   async getTasks(filters?: TaskFilterOptions): Promise<Task[]> {

@@ -378,6 +378,15 @@ export async function createHabit(
   current.push(habit);
   saveLocalHabits(current);
 
+  // Offline check
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    enqueueOfflineAction({
+      type: "CREATE_HABIT",
+      payload: habit,
+    });
+    return habit;
+  }
+
   if (!isSupabaseConfigured || isDevAuthBypass) {
     return habit;
   }
@@ -390,6 +399,7 @@ export async function createHabit(
 
     if (user) {
       const row: Database["public"]["Tables"]["habits"]["Insert"] = {
+        id: habit.id,
         user_id: user.id,
         name: habit.name,
         description: habit.description || null,
@@ -415,10 +425,20 @@ export async function createHabit(
         habit.id = data.id;
         habit.userId = data.user_id;
         saveLocalHabits(current.map((h) => (h.id === newId ? habit : h)));
+      } else if (error) {
+        console.warn("Failed to create habit in Supabase, enqueued offline:", error);
+        enqueueOfflineAction({
+          type: "CREATE_HABIT",
+          payload: habit,
+        });
       }
     }
   } catch (err) {
-    console.warn("Failed to create habit in Supabase:", err);
+    console.warn("Failed to create habit in Supabase, enqueued offline:", err);
+    enqueueOfflineAction({
+      type: "CREATE_HABIT",
+      payload: habit,
+    });
   }
 
   return habit;
@@ -475,12 +495,31 @@ export async function deleteHabit(habitId: string): Promise<void> {
   const current = getLocalHabits().filter((h) => h.id !== habitId);
   saveLocalHabits(current);
 
+  // Clear local logs associated with this habit
+  const logs = getLocalHabitLogs();
+  if (logs[habitId]) {
+    delete logs[habitId];
+    saveLocalHabitLogs(logs);
+  }
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    enqueueOfflineAction({
+      type: "delete_habit",
+      payload: { id: habitId },
+    });
+    return;
+  }
+
   if (isSupabaseConfigured && !isDevAuthBypass) {
     try {
       const supabase = createClient();
       await supabase.from("habits").delete().eq("id", habitId);
     } catch (err) {
-      console.warn("Failed to delete habit from Supabase:", err);
+      console.warn("Failed to delete habit from Supabase, enqueued offline:", err);
+      enqueueOfflineAction({
+        type: "delete_habit",
+        payload: { id: habitId },
+      });
     }
   }
 }

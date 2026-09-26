@@ -1,5 +1,7 @@
 "use client";
 
+import { format } from "date-fns";
+
 import {
   Bookmark,
   BookmarkCheck,
@@ -14,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -307,9 +310,11 @@ function SurahCard({
 function QuranReader({
   surahNumber,
   onBack,
+  onSelectSurah,
 }: {
   surahNumber: number;
   onBack: () => void;
+  onSelectSurah?: (n: number) => void;
 }) {
   const [surah, setSurah] = useState<SurahInfo | null>(null);
   const [ayahs, setAyahs] = useState<AyahWithTranslation[]>([]);
@@ -377,7 +382,7 @@ function QuranReader({
       startAyah: 1,
       endAyah: ayahs.length,
       minutesRead: 10,
-      readingDate: new Date().toISOString().slice(0, 10),
+      readingDate: format(new Date(), "yyyy-MM-dd"),
     });
     toast.success("Reading session logged — keep going!");
   }, [surahNumber, ayahs.length]);
@@ -480,14 +485,11 @@ function QuranReader({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  onBack();
-                  // Small delay to let the browser unrender, then select
-                  setTimeout(() => {
-                    const el = document.querySelector(
-                      `[data-surah="${surahNumber - 1}"]`,
-                    );
-                    el?.scrollIntoView({ behavior: "smooth" });
-                  }, 100);
+                  if (onSelectSurah) {
+                    onSelectSurah(surahNumber - 1);
+                  } else {
+                    onBack();
+                  }
                 }}
               >
                 ← Surah {surahNumber - 1}
@@ -499,13 +501,11 @@ function QuranReader({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  onBack();
-                  setTimeout(() => {
-                    const el = document.querySelector(
-                      `[data-surah="${surahNumber + 1}"]`,
-                    );
-                    el?.scrollIntoView({ behavior: "smooth" });
-                  }, 100);
+                  if (onSelectSurah) {
+                    onSelectSurah(surahNumber + 1);
+                  } else {
+                    onBack();
+                  }
                 }}
               >
                 Surah {surahNumber + 1} →
@@ -801,8 +801,28 @@ function StreakCard({
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function QuranPageClient() {
-  const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const querySurah = searchParams?.get("surah");
+
+  const [selectedSurah, setSelectedSurah] = useState<number | null>(() => {
+    if (querySurah) {
+      const parsed = parseInt(querySurah, 10);
+      if (parsed >= 1 && parsed <= 114) return parsed;
+    }
+    return null;
+  });
   const [progress, setProgress] = useState<QuranProgressSummary | null>(null);
+
+  useEffect(() => {
+    if (querySurah) {
+      const parsed = parseInt(querySurah, 10);
+      if (parsed >= 1 && parsed <= 114) {
+        Promise.resolve().then(() => {
+          setSelectedSurah(parsed);
+        });
+      }
+    }
+  }, [querySurah]);
 
   useEffect(() => {
     let mounted = true;
@@ -829,6 +849,7 @@ export function QuranPageClient() {
       <QuranReader
         surahNumber={selectedSurah}
         onBack={() => setSelectedSurah(null)}
+        onSelectSurah={(next) => setSelectedSurah(next)}
       />
     );
   }

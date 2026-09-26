@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { startOfWeek } from "date-fns";
 import { toast } from "sonner";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -42,10 +43,16 @@ export function StudyPageClient() {
       focusService.getSessions(),
     ]);
 
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
     const enriched = fetchedSubs.map((sub) => {
       const subTasks = fetchedTasks.filter((t) => t.subjectId === sub.id);
       const subSessions = fetchedSessions.filter(
-        (s) => s.subjectId === sub.id && s.status === "COMPLETED",
+        (s) =>
+          s.subjectId === sub.id &&
+          s.status === "COMPLETED" &&
+          new Date(s.startedAt).getTime() >= weekStart.getTime(),
       );
       const completedMinutes = subSessions.reduce(
         (sum, s) => sum + s.actualMinutes,
@@ -74,46 +81,15 @@ export function StudyPageClient() {
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      subjectService.getSubjects(),
-      taskService.getTasks(),
-      focusService.getSessions(),
-    ]).then(([fetchedSubs, fetchedTasks, fetchedSessions]) => {
-      if (!mounted) return;
-      const enriched = fetchedSubs.map((sub) => {
-        const subTasks = fetchedTasks.filter((t) => t.subjectId === sub.id);
-        const subSessions = fetchedSessions.filter(
-          (s) => s.subjectId === sub.id && s.status === "COMPLETED",
-        );
-        const completedMinutes = subSessions.reduce(
-          (sum, s) => sum + s.actualMinutes,
-          0,
-        );
-        const activeTaskCount = subTasks.filter(
-          (t) => t.status !== "COMPLETED",
-        ).length;
-        const target = sub.weeklyTargetMinutes || 120;
-        const progressPercentage = Math.min(
-          100,
-          Math.round((completedMinutes / target) * 100),
-        );
-
-        return {
-          ...sub,
-          completedMinutes,
-          activeTaskCount,
-          progressPercentage,
-        };
-      });
-
-      setSubjects(enriched);
-      setTasks(fetchedTasks);
+    Promise.resolve().then(() => {
+      if (mounted) {
+        loadData();
+      }
     });
-
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loadData]);
 
   const handleToggleTask = async (task: Task) => {
     const nextStatus = task.status === "COMPLETED" ? "TODO" : "COMPLETED";

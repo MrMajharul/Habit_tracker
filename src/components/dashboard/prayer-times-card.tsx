@@ -1,5 +1,6 @@
 "use client";
 
+import { isSameDay } from "date-fns";
 import { Check, Clock, MapPin, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -137,7 +138,11 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {summary.prayers.map((prayer) => {
             const isCompleted = Boolean(completedMap[prayer.name]);
-            const isNext = summary.nextPrayer?.name === prayer.name && !isCompleted;
+            const isNext =
+              Boolean(summary.nextPrayer) &&
+              summary.nextPrayer?.name === prayer.name &&
+              isSameDay(summary.nextPrayer.time, prayer.time) &&
+              !isCompleted;
 
             return (
               <button

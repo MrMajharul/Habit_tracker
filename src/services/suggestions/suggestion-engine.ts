@@ -304,15 +304,20 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
       };
     }
 
-    // Case 5: Approaching Prayer (< 25 minutes)
-    if (minutesLeft < 25 && minutesLeft > 0) {
+    // Case 5: Approaching Prayer (< 25 minutes) or Current Prayer Time
+    if (minutesLeft < 25 && minutesLeft >= 0) {
       return {
         id: `approaching-${nextPrayer.toLowerCase()}`,
         type: "POST_PRAYER_TASK",
         planLayer: "spiritual",
-        contextTitle: `${nextPrayer} is approaching in ${minutesLeft}m`,
+        contextTitle:
+          minutesLeft === 0
+            ? `${nextPrayer} prayer time has arrived`
+            : `${nextPrayer} is approaching in ${minutesLeft}m`,
         contextSubtitle:
-          "Wind down active tasks, perform fresh Wudu, and prepare for prayer with presence of mind.",
+          minutesLeft === 0
+            ? "Pause your active work, perform fresh Wudu, and prepare for prayer with presence of mind."
+            : "Wind down active tasks, perform fresh Wudu, and prepare for prayer with presence of mind.",
         urgency: "gentle",
         nextPrayerName: nextPrayer,
         remainingMinutes: minutesLeft,

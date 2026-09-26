@@ -1,6 +1,11 @@
-// ============================================================================
-// Qur'an Progress Service — Analytics & Streaks
-// ============================================================================
+import {
+  differenceInCalendarDays,
+  format,
+  parseISO,
+  startOfDay,
+  startOfMonth,
+  startOfWeek,
+} from "date-fns";
 
 import type {
   QuranDailyProgress,
@@ -15,19 +20,16 @@ import { SURAH_DATA } from "./quran-provider";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+function todayStr(now = new Date()): string {
+  return format(now, "yyyy-MM-dd");
 }
 
 function getWeekStartStr(now = new Date()): string {
-  const d = new Date(now);
-  const day = d.getDay(); // 0=Sun
-  d.setDate(d.getDate() - day);
-  return d.toISOString().slice(0, 10);
+  return format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
 function getMonthStartStr(now = new Date()): string {
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  return format(startOfMonth(now), "yyyy-MM-dd");
 }
 
 function countAyahs(session: QuranReadingSession): number {
@@ -97,23 +99,19 @@ export function getStreakInfo(): QuranStreakInfo {
 
   // Current streak: consecutive days ending today or yesterday
   let currentStreak = 0;
-  const today = new Date(todayStr());
+  const today = startOfDay(new Date());
 
   // Check if the most recent reading was today or yesterday
-  const lastRead = new Date(uniqueDates[0]);
-  const daysDiff = Math.floor(
-    (today.getTime() - lastRead.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const lastRead = startOfDay(parseISO(uniqueDates[0]));
+  const daysDiff = differenceInCalendarDays(today, lastRead);
 
   if (daysDiff <= 1) {
     // Start counting from the most recent day
     currentStreak = 1;
     for (let i = 1; i < uniqueDates.length; i++) {
-      const prev = new Date(uniqueDates[i - 1]);
-      const curr = new Date(uniqueDates[i]);
-      const diff = Math.floor(
-        (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const prev = startOfDay(parseISO(uniqueDates[i - 1]));
+      const curr = startOfDay(parseISO(uniqueDates[i]));
+      const diff = differenceInCalendarDays(prev, curr);
       if (diff === 1) {
         currentStreak++;
       } else {
@@ -128,15 +126,13 @@ export function getStreakInfo(): QuranStreakInfo {
   const sortedAsc = [...uniqueDates].sort();
 
   for (let i = 1; i < sortedAsc.length; i++) {
-    const prev = new Date(sortedAsc[i - 1]);
-    const curr = new Date(sortedAsc[i]);
-    const diff = Math.floor(
-      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const prev = startOfDay(parseISO(sortedAsc[i - 1]));
+    const curr = startOfDay(parseISO(sortedAsc[i]));
+    const diff = differenceInCalendarDays(curr, prev);
     if (diff === 1) {
       tempStreak++;
       longestStreak = Math.max(longestStreak, tempStreak);
-    } else {
+    } else if (diff > 1) {
       tempStreak = 1;
     }
   }

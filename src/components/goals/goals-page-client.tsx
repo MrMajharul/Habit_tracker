@@ -2,7 +2,7 @@
 
 import { standardSchemaResolver as zodResolver } from "@hookform/resolvers/standard-schema";
 import { CheckCircle2, Circle, Plus, Target, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -51,6 +51,30 @@ const SEED_GOALS: Goal[] = [
   { id: "7", title: "Learn Python fundamentals", category: "long_term", targetValue: 100, currentValue: 60, unit: "%", deadline: "Dec 2026", isCompleted: false },
   { id: "8", title: "Prepare for IELTS", category: "long_term", targetValue: 100, currentValue: 30, unit: "%", deadline: "Mar 2027", isCompleted: false },
 ];
+
+const GOALS_STORAGE_KEY = "istiqamaah_user_goals";
+const LEGACY_GOALS_STORAGE_KEY = "noorpath_user_goals";
+
+function getLocalGoals(): Goal[] {
+  if (typeof window === "undefined") return SEED_GOALS;
+  try {
+    const raw =
+      localStorage.getItem(GOALS_STORAGE_KEY) ??
+      localStorage.getItem(LEGACY_GOALS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : SEED_GOALS;
+  } catch {
+    return SEED_GOALS;
+  }
+}
+
+function saveLocalGoals(goals: Goal[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(GOALS_STORAGE_KEY, JSON.stringify(goals));
+  } catch {
+    // Ignore storage quota
+  }
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -244,20 +268,46 @@ export function GoalsPageClient() {
   const [goals, setGoals] = useState<Goal[]>(SEED_GOALS);
   const [activeCategory, setActiveCategory] = useState<GoalCategory | "all">("all");
 
-  const handleAdd = (g: Goal) => setGoals((prev) => [g, ...prev]);
+  useEffect(() => {
+    let mounted = true;
+    Promise.resolve().then(() => {
+      if (mounted) {
+        setGoals(getLocalGoals());
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleAdd = (g: Goal) => {
+    setGoals((prev) => {
+      const next = [g, ...prev];
+      saveLocalGoals(next);
+      return next;
+    });
+  };
 
   const handleIncrement = (id: string) => {
-    setGoals((prev) => prev.map((g) => {
-      if (g.id !== id) return g;
-      const next = Math.min(g.targetValue, g.currentValue + 1);
-      const done = next >= g.targetValue;
-      if (done) toast.success(`Goal "${g.title}" achieved!`);
-      return { ...g, currentValue: next, isCompleted: done };
-    }));
+    setGoals((prev) => {
+      const next = prev.map((g) => {
+        if (g.id !== id) return g;
+        const nextVal = Math.min(g.targetValue, g.currentValue + 1);
+        const done = nextVal >= g.targetValue;
+        if (done) toast.success(`Goal "${g.title}" achieved!`);
+        return { ...g, currentValue: nextVal, isCompleted: done };
+      });
+      saveLocalGoals(next);
+      return next;
+    });
   };
 
   const handleDelete = (id: string) => {
-    setGoals((prev) => prev.filter((g) => g.id !== id));
+    setGoals((prev) => {
+      const next = prev.filter((g) => g.id !== id);
+      saveLocalGoals(next);
+      return next;
+    });
     toast.success("Goal removed");
   };
 

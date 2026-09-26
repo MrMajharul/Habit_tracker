@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, startOfWeek } from "date-fns";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,8 +57,16 @@ export function SubjectDetail({
   const completedTasks = subjectTasks.filter((t) => t.status === "COMPLETED");
   const activeTasks = subjectTasks.filter((t) => t.status !== "COMPLETED");
 
-  const completedMinutesThisWeek = sessions
-    .filter((s) => s.status === "COMPLETED")
+  const subjectSessions = sessions.filter((s) => s.subjectId === subject.id);
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
+  const completedMinutesThisWeek = subjectSessions
+    .filter(
+      (s) =>
+        s.status === "COMPLETED" &&
+        new Date(s.startedAt).getTime() >= weekStart.getTime(),
+    )
     .reduce((sum, s) => sum + s.actualMinutes, 0);
 
   const targetMinutes = subject.weeklyTargetMinutes || 120;
@@ -270,7 +278,7 @@ export function SubjectDetail({
         </div>
       ) : (
         <div className="space-y-3">
-          {sessions.length === 0 ? (
+          {subjectSessions.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="py-10 text-center">
                 <p className="text-sm text-muted-foreground">
@@ -288,7 +296,7 @@ export function SubjectDetail({
           ) : (
             <Card>
               <CardContent className="p-4 space-y-2.5">
-                {sessions.map((session) => (
+                {subjectSessions.map((session) => (
                   <div
                     key={session.id}
                     className="flex items-center justify-between p-3 rounded-xl border border-border/70"

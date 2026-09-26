@@ -147,8 +147,8 @@ export class NotificationService {
   ): Promise<boolean> {
     const prefs = this.getPreferences();
     if (!prefs.enabled || !prefs.categories.PrayerReminder) return false;
-
-    if (this.isInQuietHours(prayerTime)) return false;
+    // Prayer reminders (especially Fajr) should not be blocked by overnight quiet hours
+    // when the user has explicitly enabled prayer notifications.
 
     const diffMs = prayerTime.getTime() - Date.now();
     // In browser context: if within 1 hour, set timeout

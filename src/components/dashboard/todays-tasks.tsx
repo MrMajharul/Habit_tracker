@@ -10,8 +10,10 @@ import {
   Target,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { taskService } from "@/services/study/task-service";
 
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -54,6 +56,34 @@ export function TodaysTasks({
   const [quickTitle, setQuickTitle] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
+  // Sync with persistent tasks on client mount
+  useEffect(() => {
+    let mounted = true;
+    taskService.getTasks().then((all) => {
+      if (!mounted || all.length === 0) return;
+      const todayList = all.filter(
+        (t) => taskService.isDueToday(t) || (!t.dueDate && t.status !== "COMPLETED"),
+      );
+      if (todayList.length > 0) {
+        setTasks(
+          todayList.map((t) => ({
+            id: t.id,
+            title: t.title,
+            priority:
+              (t.priority?.toLowerCase() as DashboardTask["priority"]) ||
+              "medium",
+            status: t.status === "COMPLETED" ? "completed" : "todo",
+            estimatedMinutes: t.estimatedMinutes ?? undefined,
+            subject: "General",
+          })),
+        );
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const completedCount = tasks.filter(
     (t) => t.status === "completed" || t.status === "COMPLETED",
   ).length;
@@ -79,41 +109,64 @@ export function TodaysTasks({
       ? pendingTasks.find((t) => t.id !== topTask?.id)
       : null;
 
-  const handleQuickAdd = (e: React.FormEvent) => {
+  const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickTitle.trim() || isAdding) return;
 
     setIsAdding(true);
-    const newTask: DashboardTask = {
-      id: `task-${Date.now()}`,
-      title: quickTitle.trim(),
-      priority: "medium",
-      status: "todo",
-      estimatedMinutes: 25,
-      subject: "General",
-    };
+    try {
+      const created = await taskService.createTask({
+        title: quickTitle.trim(),
+        priority: "MEDIUM",
+        estimatedMinutes: 25,
+      });
 
-    setTasks((prev) => [newTask, ...prev]);
-    if (onAddTask) {
-      onAddTask(quickTitle.trim());
+      const newTask: DashboardTask = {
+        id: created.id,
+        title: created.title,
+        priority: "medium",
+        status: "todo",
+        estimatedMinutes: created.estimatedMinutes ?? undefined,
+        subject: "General",
+      };
+
+      setTasks((prev) => [newTask, ...prev]);
+      if (onAddTask) {
+        onAddTask(quickTitle.trim());
+      }
+      toast.success(`Task added: "${newTask.title}"`);
+      setQuickTitle("");
+    } catch (err) {
+      console.error("Failed to add task:", err);
+      toast.error("Failed to add task");
+    } finally {
+      setIsAdding(false);
     }
-    toast.success(`Task added: "${newTask.title}"`);
-    setQuickTitle("");
-    setIsAdding(false);
   };
 
-  const handleToggle = (taskId: string) => {
+  const handleToggle = async (taskId: string) => {
+    const current = tasks.find((t) => t.id === taskId);
+    if (!current) return;
+    const isDone =
+      current.status === "completed" || current.status === "COMPLETED";
+    const nextStatus: TaskStatus = isDone ? "todo" : "completed";
+
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id !== taskId) return t;
-        const isDone = t.status === "completed" || t.status === "COMPLETED";
-        const nextStatus: TaskStatus = isDone ? "todo" : "completed";
-        if (!isDone) {
-          toast.success("Task completed! Barakallahu feek");
-        }
-        return { ...t, status: nextStatus };
-      }),
+      prev.map((t) => (t.id === taskId ? { ...t, status: nextStatus } : t)),
     );
+
+    if (!isDone) {
+      toast.success("Task completed! Barakallahu feek");
+    }
+
+    try {
+      await taskService.toggleTask(
+        taskId,
+        nextStatus === "completed" ? "COMPLETED" : "TODO",
+      );
+    } catch (err) {
+      console.error("Failed to toggle task:", err);
+    }
   };
 
   return (

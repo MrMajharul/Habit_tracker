@@ -2,6 +2,7 @@
 
 import { BookMarked, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { startOfWeek } from "date-fns";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,11 +33,17 @@ export function SubjectsPageClient() {
       focusService.getSessions(),
     ]);
 
-    // Calculate completed minutes and active task counts for each subject
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+
+    // Calculate completed minutes this week and active task counts for each subject
     const enriched = fetchedSubs.map((sub) => {
       const subTasks = fetchedTasks.filter((t) => t.subjectId === sub.id);
       const subSessions = fetchedSessions.filter(
-        (s) => s.subjectId === sub.id && s.status === "COMPLETED",
+        (s) =>
+          s.subjectId === sub.id &&
+          s.status === "COMPLETED" &&
+          new Date(s.startedAt).getTime() >= weekStart.getTime(),
       );
       const completedMinutes = subSessions.reduce(
         (sum, s) => sum + s.actualMinutes,
@@ -64,55 +71,23 @@ export function SubjectsPageClient() {
     setSessions(fetchedSessions);
 
     // If a subject is currently selected in detail view, update its reference
-    if (selectedSubject) {
-      const fresh = enriched.find((s) => s.id === selectedSubject.id);
-      if (fresh) setSelectedSubject(fresh);
-    }
-  }, [selectedSubject]);
+    setSelectedSubject((prev) => {
+      if (!prev) return null;
+      return enriched.find((s) => s.id === prev.id) || prev;
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      subjectService.getSubjects(),
-      taskService.getTasks(),
-      focusService.getSessions(),
-    ]).then(([fetchedSubs, fetchedTasks, fetchedSessions]) => {
-      if (!mounted) return;
-      const enriched = fetchedSubs.map((sub) => {
-        const subTasks = fetchedTasks.filter((t) => t.subjectId === sub.id);
-        const subSessions = fetchedSessions.filter(
-          (s) => s.subjectId === sub.id && s.status === "COMPLETED",
-        );
-        const completedMinutes = subSessions.reduce(
-          (sum, s) => sum + s.actualMinutes,
-          0,
-        );
-        const activeTaskCount = subTasks.filter(
-          (t) => t.status !== "COMPLETED",
-        ).length;
-        const target = sub.weeklyTargetMinutes || 120;
-        const progressPercentage = Math.min(
-          100,
-          Math.round((completedMinutes / target) * 100),
-        );
-
-        return {
-          ...sub,
-          completedMinutes,
-          activeTaskCount,
-          progressPercentage,
-        };
-      });
-
-      setSubjects(enriched);
-      setTasks(fetchedTasks);
-      setSessions(fetchedSessions);
+    Promise.resolve().then(() => {
+      if (mounted) {
+        loadData();
+      }
     });
-
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loadData]);
 
   const handleCreateNew = () => {
     setSubjectToEdit(null);
