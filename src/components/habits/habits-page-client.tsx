@@ -6,6 +6,7 @@ import {
   Check,
   Code2,
   Dumbbell,
+  Flame,
   GraduationCap,
   HeartHandshake,
   Moon,
@@ -124,8 +125,9 @@ function HabitCard({ habit, onToggle, onDelete }: HabitCardProps) {
               </Badge>
             )}
             {typeof habit.streak === "number" && habit.streak > 0 && (
-              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                🔥 {habit.streak}d streak
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                <Flame className="size-3 text-amber-500" />
+                <span>{habit.streak}d streak</span>
               </span>
             )}
           </div>
@@ -198,7 +200,7 @@ export function HabitsPageClient({
     );
 
     if (nextCompleted) {
-      toast.success(`Completed "${name}"! 🌟`, {
+      toast.success(`Completed "${name}"!`, {
         description: "Consistency saved in your personal worship & habit log.",
       });
     } else {
@@ -259,8 +261,9 @@ export function HabitsPageClient({
             <span className="text-sm font-normal text-muted-foreground">
               {completedCount}/{totalCount} completed
               {completedCount === totalCount && totalCount > 0 && (
-                <span className="ml-2 font-medium text-emerald-700 dark:text-emerald-400">
-                  ✓ All done!
+                <span className="ml-2 inline-flex items-center gap-1 font-medium text-emerald-700 dark:text-emerald-400">
+                  <Check className="size-3" />
+                  All done!
                 </span>
               )}
             </span>
@@ -328,7 +331,7 @@ export function HabitsPageClient({
                 {filter === "completed"
                   ? "No completed habits yet today."
                   : filter === "pending"
-                    ? "All habits completed for today! 🎉"
+                    ? "All habits completed for today!"
                     : "No habits match this category."}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -357,7 +360,7 @@ export function HabitsPageClient({
             </div>
             <p className="mt-3 font-semibold text-foreground">All habits completed today!</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Alhamdulillah for the discipline and barakah in your time. 🌟
+              Alhamdulillah for the discipline and barakah in your time.
             </p>
           </CardContent>
         </Card>

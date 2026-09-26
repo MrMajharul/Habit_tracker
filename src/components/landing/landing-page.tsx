@@ -19,6 +19,11 @@ import {
   Sparkles,
   Sun,
   Compass,
+  Ban,
+  ClipboardCheck,
+  MapPin,
+  ShieldCheck,
+  type LucideIcon,
 } from "lucide-react";
 
 /* ─── tiny helpers ──────────────────────────────────────── */
@@ -126,11 +131,11 @@ const testimonials = [
   },
 ];
 
-const principles = [
-  { icon: "🕌", title: "Prayer First", desc: "Salah is the anchor of your day, not an item on a to-do list." },
-  { icon: "🤲", title: "No Leaderboards", desc: "Your worship is between you and Allah. We never rank or compare." },
-  { icon: "📵", title: "No Ads. Ever.", desc: "Istiqamaah is a paid utility. Your data is not our product." },
-  { icon: "🌙", title: "Calm by Design", desc: "Every colour, animation, and sound is chosen to bring stillness." },
+const principles: { icon: LucideIcon; title: string; desc: string }[] = [
+  { icon: Sparkles, title: "Prayer First", desc: "Salah is the anchor of your day, not an item on a to-do list." },
+  { icon: ShieldCheck, title: "No Leaderboards", desc: "Your worship is between you and Allah. We never rank or compare." },
+  { icon: Ban, title: "No Ads. Ever.", desc: "Istiqamaah is a paid utility. Your data is not our product." },
+  { icon: Moon, title: "Calm by Design", desc: "Every colour, animation, and sound is chosen to bring stillness." },
 ];
 
 /* ─── sub-components ────────────────────────────────────── */
@@ -511,16 +516,18 @@ function PrayerSection() {
           {/* Features of the prayer system */}
           <div className="mt-8 grid sm:grid-cols-3 gap-4">
             {[
-              { icon: "📍", t: "Location-aware", d: "Auto-calculates times for your GPS position" },
-              { icon: "🔔", t: "Adhan reminder", d: "Gentle notification 5 minutes before each prayer" },
-              { icon: "📋", t: "Salah log", d: "Track which prayers you completed on time" },
+              { icon: MapPin, t: "Location-aware", d: "Auto-calculates times for your GPS position" },
+              { icon: Bell, t: "Adhan reminder", d: "Gentle notification 5 minutes before each prayer" },
+              { icon: ClipboardCheck, t: "Salah log", d: "Track which prayers you completed on time" },
             ].map((item) => (
               <div
                 key={item.t}
                 className="rounded-xl p-4 flex gap-3 items-start"
                 style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(45,155,111,0.1)" }}
               >
-                <span className="text-xl shrink-0">{item.icon}</span>
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                  <item.icon className="size-4" />
+                </div>
                 <div>
                   <p className="text-sm font-semibold" style={{ color: "#f5f0e8" }}>{item.t}</p>
                   <p className="text-xs mt-0.5" style={{ color: "rgba(245,240,232,0.45)" }}>{item.d}</p>
@@ -569,7 +576,9 @@ function PhilosophySection() {
                 transition: `opacity 0.5s ${i * 0.08}s, transform 0.5s ${i * 0.08}s`,
               }}
             >
-              <span className="text-3xl shrink-0">{p.icon}</span>
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                <p.icon className="size-6" />
+              </div>
               <div>
                 <h3 className="font-bold text-lg mb-1.5" style={{ color: "#f5f0e8" }}>{p.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: "rgba(245,240,232,0.55)" }}>{p.desc}</p>

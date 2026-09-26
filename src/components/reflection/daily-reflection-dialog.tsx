@@ -1,6 +1,6 @@
 "use client";
 
-import { Moon, Save, Sparkles } from "lucide-react";
+import { CloudRain, Moon, Save, Scale, Sparkles, Sun, type LucideIcon } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -29,7 +29,7 @@ const LEGACY_STORAGE_KEY = "noorpath_daily_reflection";
 
 export function DailyReflectionDialog() {
   const [open, setOpen] = React.useState(false);
-  const [mood, setMood] = React.useState("🌿 Peaceful");
+  const [mood, setMood] = React.useState("Peaceful");
   const [achievements, setAchievements] = React.useState("");
   const [improvements, setImprovements] = React.useState("");
   const [priority, setPriority] = React.useState("");
@@ -42,7 +42,9 @@ export function DailyReflectionDialog() {
       if (saved) {
         const data: DailyReflectionData = JSON.parse(saved);
         setTimeout(() => {
-          setMood(data.mood || "🌿 Peaceful");
+          const rawMood = data.mood || "Peaceful";
+          const cleanMood = rawMood.replace(/^[^\w]+/, "").trim() || "Peaceful";
+          setMood(cleanMood);
           setAchievements(data.achievements || "");
           setImprovements(data.improvements || "");
           setPriority(data.priority || "");
@@ -71,11 +73,11 @@ export function DailyReflectionDialog() {
     setOpen(false);
   };
 
-  const moods = [
-    { label: "🌟 Barakah", desc: "Productive & grateful" },
-    { label: "🌿 Peaceful", desc: "Calm & steady" },
-    { label: "⚖️ Balanced", desc: "Moderate effort" },
-    { label: "🌧 Challenging", desc: "Sabr & seeking mercy" },
+  const moods: { label: string; desc: string; icon: LucideIcon }[] = [
+    { label: "Barakah", desc: "Productive & grateful", icon: Sparkles },
+    { label: "Peaceful", desc: "Calm & steady", icon: Sun },
+    { label: "Balanced", desc: "Moderate effort", icon: Scale },
+    { label: "Challenging", desc: "Sabr & seeking mercy", icon: CloudRain },
   ];
 
   return (
@@ -106,21 +108,27 @@ export function DailyReflectionDialog() {
             <div className="space-y-2">
               <Label className="text-xs font-semibold">How was your day?</Label>
               <div className="grid grid-cols-2 gap-2">
-                {moods.map((m) => (
-                  <button
-                    key={m.label}
-                    type="button"
-                    onClick={() => setMood(m.label)}
-                    className={`rounded-lg border p-2 text-left text-xs transition-all ${
-                      mood === m.label
-                        ? "border-emerald-500 bg-emerald-500/10 font-medium text-emerald-900 dark:text-emerald-100"
-                        : "border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    <div>{m.label}</div>
-                    <div className="text-[10px] text-muted-foreground">{m.desc}</div>
-                  </button>
-                ))}
+                {moods.map((m) => {
+                  const Icon = m.icon;
+                  return (
+                    <button
+                      key={m.label}
+                      type="button"
+                      onClick={() => setMood(m.label)}
+                      className={`rounded-lg border p-2 text-left text-xs transition-all ${
+                        mood === m.label
+                          ? "border-emerald-500 bg-emerald-500/10 font-medium text-emerald-900 dark:text-emerald-100"
+                          : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <Icon className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>{m.label}</span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">{m.desc}</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

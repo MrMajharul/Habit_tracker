@@ -78,7 +78,7 @@ export function TasksPageClient() {
     const updated = await taskService.toggleTask(task.id, nextStatus);
     if (updated) {
       if (nextStatus === "COMPLETED") {
-        toast.success("Task completed! Barakallahu feek ✓");
+        toast.success("Task completed! Barakallahu feek");
       }
     }
   };

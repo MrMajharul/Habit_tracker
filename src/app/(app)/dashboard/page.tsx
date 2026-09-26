@@ -5,6 +5,7 @@ import { GreetingSection } from "@/components/dashboard/greeting-section";
 import { HadithOfTheDay } from "@/components/dashboard/hadith-of-the-day";
 import { PrayerTimesCard } from "@/components/dashboard/prayer-times-card";
 import { ProgressOverview } from "@/components/dashboard/progress-overview";
+import { QuranDashboardCard } from "@/components/dashboard/quran-dashboard-card";
 import { SmartSuggestionsCard } from "@/components/dashboard/smart-suggestions-card";
 import { TodaysHabits } from "@/components/dashboard/todays-habits";
 import { TodaysTasks } from "@/components/dashboard/todays-tasks";
@@ -59,6 +60,8 @@ async function DashboardContent() {
       </div>
 
       <ProgressOverview progress={dashboard.progress} />
+
+      <QuranDashboardCard />
 
       <div className="grid gap-6 md:grid-cols-2">
         <TodaysHabits habits={dashboard.habits} isMockData={dashboard.isMockData} />

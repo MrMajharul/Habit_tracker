@@ -12,7 +12,12 @@ export type OfflineActionType =
   | "create_subject"
   | "update_subject"
   | "delete_subject"
-  | "save_focus_session";
+  | "save_focus_session"
+  | "create_quran_reading_session"
+  | "update_quran_goal"
+  | "create_quran_bookmark"
+  | "delete_quran_bookmark"
+  | "update_quran_reading_position";
 
 export interface OfflineAction {
   id: string;
@@ -217,6 +222,52 @@ export async function flushOfflineQueue(): Promise<{
           ...item.payload,
           user_id: user.id,
         });
+        successCount++;
+      } else if (item.type === "create_quran_reading_session") {
+        await supabase.from("quran_reading_sessions").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "update_quran_goal") {
+        const { action, ...payload } = item.payload;
+        if (action === "create_spiritual_goal") {
+          await supabase.from("spiritual_goals").upsert({
+            ...payload,
+            user_id: user.id,
+          });
+        } else if (action === "update_spiritual_goal") {
+          const { id: goalId, ...updates } = payload;
+          await supabase
+            .from("spiritual_goals")
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq("id", goalId)
+            .eq("user_id", user.id);
+        } else {
+          // Default: upsert goal settings
+          await supabase.from("quran_goal_settings").upsert({
+            ...payload,
+            user_id: user.id,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        successCount++;
+      } else if (item.type === "create_quran_bookmark") {
+        await supabase.from("quran_bookmarks").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "delete_quran_bookmark") {
+        await supabase
+          .from("quran_bookmarks")
+          .delete()
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "update_quran_reading_position") {
+        // Reading position is stored as part of user preferences / last session
+        // The position is synced through the latest reading session
         successCount++;
       }
     } catch (err) {

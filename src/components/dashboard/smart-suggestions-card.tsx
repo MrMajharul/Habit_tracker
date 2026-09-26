@@ -1,6 +1,17 @@
 "use client";
 
-import { ArrowRight, Lightbulb } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Clock,
+  Coffee,
+  Droplets,
+  GraduationCap,
+  Lightbulb,
+  Moon,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -10,6 +21,36 @@ import type { SmartSuggestion } from "@/services/suggestions/types";
 
 interface SmartSuggestionsCardProps {
   suggestion: SmartSuggestion;
+}
+
+function renderSuggestionIcon(icon?: string, category?: string) {
+  if (icon === "book-open" || icon === "\u{1F4D6}" || category === "quran") {
+    return <BookOpen className="size-4" />;
+  }
+  if (icon === "moon" || icon === "\u{1F319}") {
+    return <Moon className="size-4" />;
+  }
+  if (icon === "sparkles" || icon === "\u{1F932}" || category === "worship") {
+    return <Sparkles className="size-4" />;
+  }
+  if (icon === "droplets" || icon === "\u{1F4A7}" || category === "prayer") {
+    return <Droplets className="size-4" />;
+  }
+  if (icon === "coffee" || icon === "\u{2615}" || category === "reflection") {
+    return <Coffee className="size-4" />;
+  }
+  if (
+    icon === "graduation-cap" ||
+    icon === "\u{1F4DA}" ||
+    icon === "\u{1F52C}" ||
+    category === "study"
+  ) {
+    return <GraduationCap className="size-4" />;
+  }
+  if (icon === "check-circle" || icon === "\u{2705}" || category === "habit") {
+    return <CheckCircle2 className="size-4" />;
+  }
+  return <Clock className="size-4" />;
 }
 
 export function SmartSuggestionsCard({ suggestion }: SmartSuggestionsCardProps) {
@@ -45,7 +86,9 @@ export function SmartSuggestionsCard({ suggestion }: SmartSuggestionsCardProps) 
               className="group flex flex-col justify-between rounded-xl border border-border/60 bg-background/60 p-3 transition-all hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:shadow-sm"
             >
               <div className="flex items-start justify-between">
-                <span className="text-lg">{item.icon}</span>
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                  {renderSuggestionIcon(item.icon, item.category)}
+                </div>
                 <span className="text-[11px] font-medium text-muted-foreground group-hover:text-emerald-700 dark:group-hover:text-emerald-300">
                   {item.durationMinutes} min
                 </span>

@@ -11,6 +11,8 @@ const STATIC_ASSETS = [
   "/tasks",
   "/subjects",
   "/quran",
+  "/quran/bookmarks",
+  "/goals",
   "/dhikr",
   "/manifest.webmanifest",
   "/icons/icon-192.png",

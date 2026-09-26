@@ -63,7 +63,7 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
     setCompletedMap((prev) => ({ ...prev, [prayer]: nextState }));
 
     if (nextState) {
-      toast.success(`${label} completed 🤲`, {
+      toast.success(`${label} completed`, {
         description: "Salah recorded for today.",
       });
     } else {
@@ -173,8 +173,9 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
 
                 <div className="flex items-center gap-1 text-[10px]">
                   {isCompleted ? (
-                    <span className="font-medium text-emerald-700 dark:text-emerald-300">
-                      ✓ Done
+                    <span className="font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-0.5">
+                      <Check className="size-2.5" />
+                      Done
                     </span>
                   ) : isNext ? (
                     <span className="font-medium text-primary flex items-center gap-0.5">

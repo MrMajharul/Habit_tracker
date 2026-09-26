@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Calendar, CheckSquare, Clock, Sparkles } from "lucide-react";
+import { BarChart3, BookOpen, Calendar, CheckSquare, Clock, Flame, Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -122,7 +122,10 @@ export default function AnalyticsPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="font-medium">{h.name}</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gold">🔥 {h.streak}d</span>
+                  <span className="text-xs text-gold flex items-center gap-1">
+                    <Flame className="size-3 text-gold" />
+                    {h.streak}d
+                  </span>
                   <span className="tabular-nums text-muted-foreground">{h.completionRate}%</span>
                 </div>
               </div>

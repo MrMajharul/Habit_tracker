@@ -116,7 +116,7 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
       const next = new Set(prev);
       if (isNowCompleted) {
         next.add(prayerName);
-        toast.success(`${prayerName.toUpperCase()} marked as completed 🤲`);
+        toast.success(`${prayerName.toUpperCase()} marked as completed`);
       } else {
         next.delete(prayerName);
         toast.message(`${prayerName.toUpperCase()} unmarked`);
@@ -201,7 +201,7 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
           <Progress value={progressValue} className="h-2.5" />
           <p className="mt-2 text-xs text-muted-foreground">
             {completedCount === totalCount
-              ? "All prayers completed for today — Alhamdulillah! 🌟"
+              ? "All prayers completed for today — Alhamdulillah!"
               : completedCount === 0
                 ? "No prayers logged yet today."
                 : `${totalCount - completedCount} prayer${totalCount - completedCount > 1 ? "s" : ""} remaining today.`}
@@ -316,7 +316,14 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                   )}
                   onClick={() => handleTogglePrayer(prayer.name)}
                 >
-                  {isCompleted ? "Done ✓" : "Mark done"}
+                  {isCompleted ? (
+                    <span className="flex items-center gap-1">
+                      <Check className="size-3.5" />
+                      Done
+                    </span>
+                  ) : (
+                    "Mark done"
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -327,7 +334,10 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
       {/* Prayer-Based Day Planning Hint */}
       <Card className="border-border/60 bg-muted/20">
         <CardContent className="py-4">
-          <p className="text-sm font-medium">💡 Plan your day around Salah</p>
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <Sparkles className="size-4 text-emerald" />
+            <span>Plan your day around Salah</span>
+          </p>
           <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
             Attach habits directly to prayer times (e.g. &quot;After Fajr → Read Qur&apos;an&quot;, &quot;After Asr → Exercise&quot;).
             Salah is the natural spiritual rhythm of the believer&apos;s day.

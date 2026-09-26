@@ -51,14 +51,14 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         id: "evening-wind-down",
         type: "DAILY_PLAN",
         planLayer: "spiritual",
-        contextTitle: "🌙 Evening Reflection & Rest",
+        contextTitle: "Evening Reflection & Rest",
         contextSubtitle:
           "Worship and study for today are resting. Prepare your heart for tomorrow.",
         urgency: "calm",
         items: [
           {
             id: "surah-mulk",
-            icon: "📖",
+            icon: "book-open",
             category: "worship",
             title: "Recite Surah Al-Mulk",
             durationMinutes: 10,
@@ -68,7 +68,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           },
           {
             id: "night-reflection",
-            icon: "🌙",
+            icon: "moon",
             category: "reflection",
             title: "Daily Self-Reflection",
             durationMinutes: 5,
@@ -78,7 +78,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           },
           {
             id: "sleep-adhkar",
-            icon: "🤲",
+            icon: "sparkles",
             category: "worship",
             title: "Bedtime Adhkar & Tasbeeh",
             durationMinutes: 5,
@@ -98,20 +98,29 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         (h) => !h.completed && h.prayerAnchor === "fajr",
       );
 
+      // Qur'an-aware morning suggestion
+      const quranTitle = context.quranTargetMet
+        ? "Continue your Qur'an reading"
+        : context.quranLastSurah
+          ? `Continue reading Surah ${context.quranLastSurah}`
+          : fajrHabit
+            ? fajrHabit.name
+            : "Qur'an Recitation after Fajr";
+
       const items: SuggestionItem[] = [
         {
           id: "morning-quran",
-          icon: "📖",
-          category: "worship",
-          title: fajrHabit ? fajrHabit.name : "Qur'an Recitation (2 Juz/Pages)",
+          icon: "book-open",
+          category: "quran",
+          title: quranTitle,
           durationMinutes: 20,
           actionUrl: "/quran",
           actionLabel: "Recite",
-          type: "POST_PRAYER_TASK",
+          type: "POST_FAJR_QURAN",
         },
         {
           id: "morning-adhkar",
-          icon: "🤲",
+          icon: "sparkles",
           category: "worship",
           title: "Morning Adhkar",
           durationMinutes: 10,
@@ -121,7 +130,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         },
         {
           id: "plan-day",
-          icon: "📚",
+          icon: "graduation-cap",
           category: "study",
           title: "Review Today's Study & Tasks",
           durationMinutes: 10,
@@ -135,7 +144,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         id: "morning-barakah",
         type: "DAILY_PLAN",
         planLayer: "integrated",
-        contextTitle: "🌅 Morning Barakah Routine",
+        contextTitle: "Morning Barakah Routine",
         contextSubtitle:
           "The hours after Fajr hold blessed productivity. Fit in worship before worldly tasks.",
         urgency: "opportunity",
@@ -158,7 +167,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         items: [
           {
             id: `focus-overdue-${overdueTask.id ?? "1"}`,
-            icon: "⏱",
+            icon: "clock",
             category: "study",
             title: `${overdueTask.title} — ${duration} min`,
             durationMinutes: duration,
@@ -168,7 +177,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           },
           {
             id: "short-dhikr",
-            icon: "🤲",
+            icon: "sparkles",
             category: "worship",
             title: "Pre-prayer Istighfar — 5 min",
             durationMinutes: 5,
@@ -195,7 +204,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         items: [
           {
             id: `focus-deadline-${dueTodayTask.id ?? "1"}`,
-            icon: "⏱",
+            icon: "clock",
             category: "study",
             title: `${dueTodayTask.title} — ${focusMins} min`,
             durationMinutes: focusMins,
@@ -205,7 +214,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           },
           {
             id: "prayer-prep",
-            icon: "💧",
+            icon: "droplets",
             category: "prayer",
             title: "Wudu & Prayer Preparation",
             durationMinutes: 5,
@@ -221,6 +230,67 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
     if (hour >= 12 && hour < 15 && minutesLeft >= 90) {
       const topTask = pendingTasks[0];
       const taskTitle = topTask?.title ?? "Machine Learning Study";
+      const items: SuggestionItem[] = [
+        {
+          id: "post-dhuhr-task",
+          icon: "graduation-cap",
+          category: "study",
+          title: `${taskTitle} — 40 min`,
+          durationMinutes: 40,
+          actionUrl: `/focus?task=${encodeURIComponent(taskTitle)}`,
+          actionLabel: "Start Focus",
+          type: "TASK_RECOMMENDATION",
+        },
+      ];
+
+      if (context.quranTargetMet === false) {
+        items.push({
+          id: "post-dhuhr-quran",
+          icon: "book-open",
+          category: "quran",
+          title: context.quranLastSurah
+            ? `Continue Surah ${context.quranLastSurah} — 15 min`
+            : "Qur'an Reading — 15 min",
+          durationMinutes: 15,
+          actionUrl: "/quran",
+          actionLabel: "Read",
+          type: "QURAN_CONTINUE",
+        });
+      }
+
+      items.push(
+        {
+          id: "post-dhuhr-break",
+          icon: "coffee",
+          category: "reflection",
+          title: "Hydrate & Mindful Break — 10 min",
+          durationMinutes: 10,
+          actionUrl: "/focus",
+          actionLabel: "Break",
+          type: "STUDY_WINDOW",
+        },
+        {
+          id: "post-dhuhr-secondary",
+          icon: "graduation-cap",
+          category: "study",
+          title: "Research & Writing — 30 min",
+          durationMinutes: 30,
+          actionUrl: "/focus?subject=Research",
+          actionLabel: "Focus",
+          type: "TASK_RECOMMENDATION",
+        },
+        {
+          id: "post-dhuhr-dhikr",
+          icon: "sparkles",
+          category: "worship",
+          title: "Mid-day Dhikr & Tasbeeh — 5 min",
+          durationMinutes: 5,
+          actionUrl: "/dhikr",
+          actionLabel: "Dhikr",
+          type: "POST_PRAYER_TASK",
+        },
+      );
+
       return {
         id: "post-dhuhr-focus",
         type: "POST_PRAYER_TASK",
@@ -230,48 +300,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         urgency: "opportunity",
         nextPrayerName: nextPrayer,
         remainingMinutes: minutesLeft,
-        items: [
-          {
-            id: "post-dhuhr-task",
-            icon: "📚",
-            category: "study",
-            title: `${taskTitle} — 40 min`,
-            durationMinutes: 40,
-            actionUrl: `/focus?task=${encodeURIComponent(taskTitle)}`,
-            actionLabel: "Start Focus",
-            type: "TASK_RECOMMENDATION",
-          },
-          {
-            id: "post-dhuhr-break",
-            icon: "☕",
-            category: "reflection",
-            title: "Hydrate & Mindful Break — 10 min",
-            durationMinutes: 10,
-            actionUrl: "/focus",
-            actionLabel: "Break",
-            type: "STUDY_WINDOW",
-          },
-          {
-            id: "post-dhuhr-secondary",
-            icon: "🔬",
-            category: "study",
-            title: "Research & Writing — 30 min",
-            durationMinutes: 30,
-            actionUrl: "/focus?subject=Research",
-            actionLabel: "Focus",
-            type: "TASK_RECOMMENDATION",
-          },
-          {
-            id: "post-dhuhr-dhikr",
-            icon: "🤲",
-            category: "worship",
-            title: "Mid-day Dhikr & Tasbeeh — 5 min",
-            durationMinutes: 5,
-            actionUrl: "/dhikr",
-            actionLabel: "Dhikr",
-            type: "POST_PRAYER_TASK",
-          },
-        ],
+        items,
       };
     }
 
@@ -281,7 +310,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         id: `approaching-${nextPrayer.toLowerCase()}`,
         type: "POST_PRAYER_TASK",
         planLayer: "spiritual",
-        contextTitle: `🕌 ${nextPrayer} is approaching in ${minutesLeft}m`,
+        contextTitle: `${nextPrayer} is approaching in ${minutesLeft}m`,
         contextSubtitle:
           "Wind down active tasks, perform fresh Wudu, and prepare for prayer with presence of mind.",
         urgency: "gentle",
@@ -290,7 +319,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         items: [
           {
             id: "wudu-prep",
-            icon: "💧",
+            icon: "droplets",
             category: "prayer",
             title: "Perform Wudu & Sunnah Prep",
             durationMinutes: 5,
@@ -300,9 +329,58 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           },
           {
             id: "istighfar",
-            icon: "🤲",
+            icon: "sparkles",
             category: "worship",
             title: "Pre-Salah Istighfar & Dua",
+            durationMinutes: 5,
+            actionUrl: "/dhikr",
+            actionLabel: "Dhikr",
+            type: "POST_PRAYER_TASK",
+          },
+        ],
+      };
+    }
+
+    // Case 5.5: Qur'an target not met — gentle reminder with reading window
+    if (
+      context.quranTargetMet === false &&
+      context.quranTargetValue &&
+      minutesLeft >= 20
+    ) {
+      const quranCurrent =
+        context.quranTargetType === "minutes"
+          ? context.quranMinutesToday ?? 0
+          : context.quranAyahsToday ?? 0;
+      const remaining = (context.quranTargetValue ?? 10) - quranCurrent;
+      const readDuration = Math.min(15, minutesLeft - 5, remaining > 0 ? remaining : 15);
+
+      return {
+        id: "quran-target-reminder",
+        type: "QURAN_TARGET",
+        planLayer: "spiritual",
+        contextTitle: `Your daily Qur'an target is still open.`,
+        contextSubtitle: `You have ${minutesLeft} minutes before ${nextPrayer}. A ${readDuration}-minute reading session fits comfortably.`,
+        urgency: "gentle",
+        nextPrayerName: nextPrayer,
+        remainingMinutes: minutesLeft,
+        items: [
+          {
+            id: "quran-target-read",
+            icon: "book-open",
+            category: "quran",
+            title: context.quranLastSurah
+              ? `Continue Surah ${context.quranLastSurah} — ${readDuration} min`
+              : `Qur'an Reading — ${readDuration} min`,
+            durationMinutes: readDuration,
+            actionUrl: "/quran",
+            actionLabel: "Read",
+            type: "QURAN_CONTINUE",
+          },
+          {
+            id: "pre-prayer-dhikr",
+            icon: "sparkles",
+            category: "worship",
+            title: "Pre-prayer Dhikr — 5 min",
             durationMinutes: 5,
             actionUrl: "/dhikr",
             actionLabel: "Dhikr",
@@ -319,10 +397,27 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
       const studyDuration = Math.min(30, Math.max(15, minutesLeft - 15));
       const breakDuration = Math.max(5, Math.min(15, minutesLeft - studyDuration - 10));
 
+      // Include Qur'an item if target not met
+      const quranItem: SuggestionItem | null =
+        context.quranTargetMet === false
+          ? {
+              id: "quran-window-read",
+              icon: "book-open",
+              category: "quran" as const,
+              title: context.quranLastSurah
+                ? `Continue Surah ${context.quranLastSurah} — 10 min`
+                : "Qur'an Reading — 10 min",
+              durationMinutes: 10,
+              actionUrl: "/quran",
+              actionLabel: "Read",
+              type: "QURAN_CONTINUE" as const,
+            }
+          : null;
+
       const items: SuggestionItem[] = [
         {
           id: "study-sprint",
-          icon: "📚",
+          icon: "graduation-cap",
           category: "study",
           title: `${taskTitle} — ${studyDuration} min`,
           durationMinutes: studyDuration,
@@ -330,9 +425,10 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           actionLabel: "Focus",
           type: "TASK_RECOMMENDATION",
         },
+        ...(quranItem ? [quranItem] : []),
         {
           id: "quran-window",
-          icon: "📖",
+          icon: "book-open",
           category: "worship",
           title: nextAnchorHabit ? nextAnchorHabit.name : "Dhikr & Tasbeeh — 5 min",
           durationMinutes: 5,
@@ -342,7 +438,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         },
         {
           id: "break-window",
-          icon: "☕",
+          icon: "coffee",
           category: "reflection",
           title: `Rest & Transition Break — ${breakDuration} min`,
           durationMinutes: breakDuration,
@@ -371,14 +467,14 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
       id: "midday-focus",
       type: "DAILY_PLAN",
       planLayer: "integrated",
-      contextTitle: "⚡ Afternoon Deep Work Window",
+      contextTitle: "Afternoon Deep Work Window",
       contextSubtitle:
         "Align your study and habit goals with calm focus.",
       urgency: "opportunity",
       items: [
         {
           id: "focus-block",
-          icon: "⏱",
+          icon: "clock",
           category: "study",
           title: "25-Minute Focus Block (Pomodoro)",
           durationMinutes: 25,
@@ -388,7 +484,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         },
         {
           id: "habit-check",
-          icon: "✅",
+          icon: "check-circle",
           category: "habit",
           title: "Complete Afternoon Habits",
           durationMinutes: 10,

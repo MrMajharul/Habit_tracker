@@ -1,240 +1,864 @@
 "use client";
 
-import { BookOpen, Plus } from "lucide-react";
-import { useState } from "react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  BookOpen,
+  Check,
+  ChevronLeft,
+  Clock,
+  Flame,
+  Search,
+  Star,
+  Target,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { getQuranProvider, SURAH_DATA } from "@/services/quran/quran-provider";
+import { quranService } from "@/services/quran/quran-service";
+import { quranBookmarkService } from "@/services/quran/quran-bookmark-service";
+import { quranGoalService } from "@/services/quran/quran-goal-service";
+import { quranProgressService } from "@/services/quran/quran-progress-service";
+import type {
+  SurahInfo,
+  AyahWithTranslation,
+  QuranProgressSummary,
+  QuranGoalSettings,
+} from "@/services/quran/quran-types";
 
-interface QuranLog {
-  id: string;
-  date: string;
-  pages: number;
-  minutes: number;
-  note?: string;
-}
+// ─── Surah Browser ──────────────────────────────────────────────────────────
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+function SurahBrowser({
+  onSelectSurah,
+  progress,
+}: {
+  onSelectSurah: (n: number) => void;
+  progress: QuranProgressSummary;
+}) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "meccan" | "medinan">("all");
 
-const JUZ_NAMES = [
-  "Alif Lam Mim", "Sayaqul", "Tilkar Rusul", "Lan Tana Lu", "Wal Muhsanat",
-  "La Yuhibbullah", "Wa Iza Samiu", "Wa Lau Annana", "Qalal Mala", "Wa Alamu",
-  "Yatazerrun", "Wa Ma Min Dabbah", "Wa Ma Ubarri'u", "Rubama", "Subhanallazi",
-  "Qal Alam", "Iqtaraba", "Qadd Aflaha", "Wa Qalallazina", "A'man Khalaqa",
-  "Utlu Ma Uhiya", "Wa Man Yaqnut", "Wa Mali", "Faman Azlamu", "Ilayhi Yuraddu",
-  "Ha Mim", "Qala Fama Khatbukum", "Qadd Sami Allah", "Tabaraka", "Amma",
-];
+  const filtered = SURAH_DATA.filter((s) => {
+    const matchesSearch =
+      !search ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.englishNameTranslation.toLowerCase().includes(search.toLowerCase()) ||
+      s.arabicName.includes(search) ||
+      String(s.number) === search;
+    const matchesFilter = filter === "all" || s.revelationType === filter;
+    return matchesSearch && matchesFilter;
+  });
 
-const SEED_LOGS: QuranLog[] = [
-  { id: "1", date: "Today", pages: 5, minutes: 20, note: "After Fajr" },
-  { id: "2", date: "Yesterday", pages: 8, minutes: 30, note: "After Isha" },
-  { id: "3", date: "2 days ago", pages: 4, minutes: 15 },
-  { id: "4", date: "3 days ago", pages: 6, minutes: 25, note: "After Asr" },
-  { id: "5", date: "4 days ago", pages: 10, minutes: 40, note: "Weekend" },
-];
+  // Recently read surahs
+  const sessions = quranService.getReadingSessions();
+  const recentSurahNumbers = [
+    ...new Set(sessions.slice(0, 5).map((s) => s.surahNumber)),
+  ];
+  const recentSurahs = recentSurahNumbers
+    .map((n) => SURAH_DATA[n - 1])
+    .filter(Boolean);
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export function QuranPageClient() {
-  const [currentJuz, setCurrentJuz] = useState(12);
-  const [totalPages, setTotalPages] = useState(43);
-  const [logs, setLogs] = useState<QuranLog[]>(SEED_LOGS);
-  const [logPages, setLogPages] = useState(5);
-  const [logMinutes, setLogMinutes] = useState(20);
-  const [logNote, setLogNote] = useState("");
-
-  const juzProgress = (currentJuz / 30) * 100;
-  const TARGET_PAGES = 604;
-  const pageProgress = (totalPages / TARGET_PAGES) * 100;
-
-  const handleLog = () => {
-    if (logPages < 1) {
-      toast.error("Please enter at least 1 page");
-      return;
-    }
-    const newLog: QuranLog = {
-      id: crypto.randomUUID(),
-      date: "Just now",
-      pages: logPages,
-      minutes: logMinutes,
-      note: logNote || undefined,
-    };
-    setLogs((prev) => [newLog, ...prev]);
-    setTotalPages((p) => p + logPages);
-    toast.success(`Logged ${logPages} pages — BarakAllahu feek! 📖`);
-    setLogNote("");
-  };
-
-  const inputClass = "rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+  // Bookmarked surahs
+  const bookmarks = quranBookmarkService.getAllBookmarks();
+  const bookmarkedSurahNumbers = [
+    ...new Set(bookmarks.map((b) => b.surahNumber)),
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Qur&apos;an</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Track your reading, memorisation, and revision.</p>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Qur&apos;an
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Read, reflect, and track your Qur&apos;an journey.
+        </p>
       </div>
 
-      {/* Khatm Progress */}
-      <Card className="border-emerald/20 bg-gradient-to-br from-card to-emerald/5">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <BookOpen className="size-4 text-emerald" />
-            Khatm Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Juz progress</span>
-              <span className="font-semibold">{currentJuz} / 30 Juz</span>
-            </div>
-            <Progress value={juzProgress} className="h-3 [&>div]:bg-emerald" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Pages read</span>
-              <span className="font-semibold">{totalPages} / {TARGET_PAGES}</span>
-            </div>
-            <Progress value={pageProgress} className="h-2" />
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-emerald/20 bg-emerald/5 px-4 py-3">
-            <div>
-              <p className="text-xs text-muted-foreground">Currently on</p>
-              <p className="font-semibold">Juz {currentJuz} — {JUZ_NAMES[currentJuz - 1]}</p>
-            </div>
-            <Badge variant="secondary" className="bg-emerald/10 text-emerald">
-              {Math.round(juzProgress)}%
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Progress Summary Cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="border-emerald/20 bg-gradient-to-br from-card to-emerald/5">
+          <CardContent className="pt-4 pb-3 text-center">
+            <Flame className="mx-auto mb-1 size-5 text-emerald" />
+            <p className="text-xl font-bold text-emerald">
+              {progress.streak.currentStreak}
+            </p>
+            <p className="text-[11px] text-muted-foreground">Day streak</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 text-center">
+            <Clock className="mx-auto mb-1 size-5 text-primary" />
+            <p className="text-xl font-bold">
+              {progress.daily.minutesRead}
+            </p>
+            <p className="text-[11px] text-muted-foreground">Min today</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 text-center">
+            <BookOpen className="mx-auto mb-1 size-5 text-primary" />
+            <p className="text-xl font-bold">
+              {progress.daily.ayahsRead}
+            </p>
+            <p className="text-[11px] text-muted-foreground">Ayahs today</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 text-center">
+            <TrendingUp className="mx-auto mb-1 size-5 text-primary" />
+            <p className="text-xl font-bold">
+              {progress.weekly.daysRead}/7
+            </p>
+            <p className="text-[11px] text-muted-foreground">This week</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Quick Log */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Log Today&apos;s Reading</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="q-pages">Pages read</label>
-              <input
-                id="q-pages"
-                type="number"
-                min={1}
-                max={100}
-                value={logPages}
-                onChange={(e) => setLogPages(Number(e.target.value))}
-                className={inputClass + " w-full"}
-              />
+      {/* Continue Reading */}
+      {progress.lastPosition && (
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-primary/10">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="space-y-0.5">
+              <p className="text-xs font-medium text-primary uppercase tracking-wider">
+                Continue Reading
+              </p>
+              <p className="text-sm font-semibold">
+                Surah {progress.lastPosition.surahName ?? `#${progress.lastPosition.surahNumber}`}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Ayah {progress.lastPosition.ayahNumber}
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground" htmlFor="q-mins">Minutes spent</label>
-              <input
-                id="q-mins"
-                type="number"
-                min={1}
-                max={240}
-                value={logMinutes}
-                onChange={(e) => setLogMinutes(Number(e.target.value))}
-                className={inputClass + " w-full"}
-              />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="q-note">Note (optional)</label>
-            <input
-              id="q-note"
-              value={logNote}
-              onChange={(e) => setLogNote(e.target.value)}
-              className={inputClass + " w-full"}
-              placeholder="After Fajr, Surah Yusuf…"
-            />
-          </div>
-          <Button onClick={handleLog} className="w-full gap-2">
-            <Plus className="size-4" />
-            Log {logPages} page{logPages !== 1 ? "s" : ""}
-          </Button>
+            <Button
+              size="sm"
+              onClick={() =>
+                onSelectSurah(progress.lastPosition!.surahNumber)
+              }
+              className="gap-1.5"
+            >
+              <BookOpen className="size-3.5" />
+              Continue
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Update current Juz</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={1}
-                max={30}
-                value={currentJuz}
-                onChange={(e) => setCurrentJuz(Number(e.target.value))}
-                className="flex-1 accent-emerald"
-                aria-label="Current Juz"
-              />
-              <span className="w-16 text-center text-sm font-medium">Juz {currentJuz}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Juz Grid */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">30 Juz Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-10">
-            {Array.from({ length: 30 }, (_, i) => i + 1).map((juz) => (
+      {/* Recently Read */}
+      {recentSurahs.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Recently Read
+          </h2>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {recentSurahs.map((s) => (
               <button
-                key={juz}
-                onClick={() => setCurrentJuz(juz)}
-                title={JUZ_NAMES[juz - 1]}
-                className={cn(
-                  "aspect-square rounded-lg border text-xs font-medium transition-colors",
-                  juz < currentJuz
-                    ? "border-emerald/30 bg-emerald/20 text-emerald"
-                    : juz === currentJuz
-                      ? "border-emerald bg-emerald text-emerald-foreground"
-                      : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40",
-                )}
+                key={s.number}
+                onClick={() => onSelectSurah(s.number)}
+                className="flex shrink-0 items-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
               >
-                {juz}
+                <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                  {s.number}
+                </span>
+                <div>
+                  <p className="text-xs font-semibold">{s.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {s.arabicName}
+                  </p>
+                </div>
               </button>
             ))}
           </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">Click a Juz to update your position</p>
+        </div>
+      )}
+
+      {/* Search & Filter */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search Surah by name or number…"
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-1 rounded-xl bg-muted/60 p-1">
+          {(["all", "meccan", "medinan"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-medium capitalize transition-colors",
+                filter === f
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {f === "all" ? "All" : f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Bookmarked Surahs */}
+      {bookmarkedSurahNumbers.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+            <BookmarkCheck className="size-3.5" />
+            Bookmarked
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {bookmarkedSurahNumbers.map((n) => {
+              const s = SURAH_DATA[n - 1];
+              return (
+                <button
+                  key={n}
+                  onClick={() => onSelectSurah(n)}
+                  className="rounded-lg border border-gold/30 bg-gold/5 px-2.5 py-1 text-xs font-medium text-gold transition-colors hover:bg-gold/10"
+                >
+                  {s?.name ?? `Surah ${n}`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Surah List */}
+      <div className="space-y-1.5">
+        <h2 className="text-sm font-semibold text-muted-foreground">
+          {filtered.length} Surahs
+        </h2>
+        <div className="space-y-1.5">
+          {filtered.map((surah) => (
+            <SurahCard
+              key={surah.number}
+              surah={surah}
+              onClick={() => onSelectSurah(surah.number)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SurahCard({
+  surah,
+  onClick,
+}: {
+  surah: SurahInfo;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-xl border border-border/70 bg-card p-3 text-left transition-all hover:border-primary/30 hover:bg-primary/5 hover:shadow-sm"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-bold text-primary">
+        {surah.number}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-sm font-semibold">{surah.name}</p>
+          <p
+            className="shrink-0 text-right font-arabic text-base font-semibold text-foreground"
+            dir="rtl"
+          >
+            {surah.arabicName}
+          </p>
+        </div>
+        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span>{surah.englishNameTranslation}</span>
+          <span>·</span>
+          <span>{surah.ayahCount} ayahs</span>
+          <span>·</span>
+          <Badge
+            variant="outline"
+            className={cn(
+              "h-4 border px-1.5 text-[9px]",
+              surah.revelationType === "meccan"
+                ? "border-amber-300/30 text-amber-600 dark:text-amber-400"
+                : "border-blue-300/30 text-blue-600 dark:text-blue-400",
+            )}
+          >
+            {surah.revelationType}
+          </Badge>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ─── Qur'an Reader ──────────────────────────────────────────────────────────
+
+function QuranReader({
+  surahNumber,
+  onBack,
+}: {
+  surahNumber: number;
+  onBack: () => void;
+}) {
+  const [surah, setSurah] = useState<SurahInfo | null>(null);
+  const [ayahs, setAyahs] = useState<AyahWithTranslation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const provider = getQuranProvider();
+    let mounted = true;
+
+    Promise.resolve()
+      .then(() => {
+        if (!mounted) return null;
+        setLoading(true);
+        setError(null);
+        return Promise.all([
+          provider.getSurah(surahNumber),
+          provider.getAyahs(surahNumber),
+        ]);
+      })
+      .then((res) => {
+        if (!res || !mounted) return;
+        const [s, a] = res;
+        setSurah(s);
+        setAyahs(a);
+        if (a.length === 0) {
+          setError("Could not load Qur'an text. Please check your connection.");
+        }
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setError("Failed to load Surah. Please check your internet connection.");
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [surahNumber]);
+
+  const handleBookmarkToggle = useCallback(
+    (ayahNumber: number) => {
+      if (quranBookmarkService.isBookmarked(surahNumber, ayahNumber)) {
+        quranBookmarkService.removeBookmark(surahNumber, ayahNumber);
+        toast.success("Bookmark removed");
+      } else {
+        quranBookmarkService.addBookmark({
+          userId: "local",
+          surahNumber,
+          ayahNumber,
+        });
+        toast.success("Ayah bookmarked");
+      }
+    },
+    [surahNumber],
+  );
+
+  const handleLogSession = useCallback(() => {
+    if (ayahs.length === 0) return;
+    quranService.createReadingSession({
+      userId: "local",
+      surahNumber,
+      startAyah: 1,
+      endAyah: ayahs.length,
+      minutesRead: 10,
+      readingDate: new Date().toISOString().slice(0, 10),
+    });
+    toast.success("Reading session logged — keep going!");
+  }, [surahNumber, ayahs.length]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ChevronLeft className="size-4" />
+            Back
+          </Button>
+        </div>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="mt-3 text-sm text-muted-foreground">
+            Loading Surah…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+          <ChevronLeft className="size-4" />
+          Surahs
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleLogSession}
+          className="gap-1.5 text-xs"
+        >
+          <Clock className="size-3.5" />
+          Log Session
+        </Button>
+      </div>
+
+      {error ? (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <BookOpen className="mx-auto mb-3 size-8 text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Content source: Al-Quran Cloud API (alquran.cloud)
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Surah Title */}
+          {surah && (
+            <Card className="border-emerald/20 bg-gradient-to-br from-card to-emerald/5">
+              <CardContent className="py-6 text-center">
+                <p
+                  className="font-arabic text-3xl font-bold text-foreground"
+                  dir="rtl"
+                >
+                  {surah.arabicName}
+                </p>
+                <p className="mt-1 text-lg font-semibold">{surah.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {surah.englishNameTranslation} · {surah.ayahCount} Ayahs ·{" "}
+                  {surah.revelationType === "meccan" ? "Meccan" : "Medinan"}
+                </p>
+                {surahNumber !== 9 && (
+                  <p
+                    className="mt-4 font-arabic text-xl text-foreground/80"
+                    dir="rtl"
+                  >
+                    بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Ayah list */}
+          <Card>
+            <CardContent className="divide-y divide-border/50 p-0">
+              {ayahs.map((ayah) => (
+                <AyahRow
+                  key={ayah.number}
+                  ayah={ayah}
+                  surahNumber={surahNumber}
+                  onBookmarkToggle={handleBookmarkToggle}
+                />
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-2">
+            {surahNumber > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onBack();
+                  // Small delay to let the browser unrender, then select
+                  setTimeout(() => {
+                    const el = document.querySelector(
+                      `[data-surah="${surahNumber - 1}"]`,
+                    );
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }}
+              >
+                ← Surah {surahNumber - 1}
+              </Button>
+            )}
+            <div className="flex-1" />
+            {surahNumber < 114 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onBack();
+                  setTimeout(() => {
+                    const el = document.querySelector(
+                      `[data-surah="${surahNumber + 1}"]`,
+                    );
+                    el?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }}
+              >
+                Surah {surahNumber + 1} →
+              </Button>
+            )}
+          </div>
+
+          <p className="text-center text-[10px] text-muted-foreground">
+            Content source: Al-Quran Cloud API (alquran.cloud) · Sahih International Translation
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Ayah Row ───────────────────────────────────────────────────────────────
+
+function AyahRow({
+  ayah,
+  surahNumber,
+  onBookmarkToggle,
+}: {
+  ayah: AyahWithTranslation;
+  surahNumber: number;
+  onBookmarkToggle: (n: number) => void;
+}) {
+  const [bookmarked, setBookmarked] = useState(
+    quranBookmarkService.isBookmarked(surahNumber, ayah.number),
+  );
+
+  const handleToggle = () => {
+    onBookmarkToggle(ayah.number);
+    setBookmarked(!bookmarked);
+  };
+
+  return (
+    <div className="group relative px-4 py-4 transition-colors hover:bg-muted/30 sm:px-6">
+      {/* Ayah number & bookmark */}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+          {ayah.number}
+        </span>
+        <button
+          onClick={handleToggle}
+          aria-label={
+            bookmarked ? "Remove bookmark" : "Bookmark this ayah"
+          }
+          className={cn(
+            "rounded-lg p-1.5 transition-colors",
+            bookmarked
+              ? "text-gold"
+              : "text-muted-foreground/40 opacity-0 group-hover:opacity-100",
+          )}
+        >
+          {bookmarked ? (
+            <BookmarkCheck className="size-4" />
+          ) : (
+            <Bookmark className="size-4" />
+          )}
+        </button>
+      </div>
+
+      {/* Arabic text */}
+      <p
+        className="font-arabic text-xl leading-loose text-foreground sm:text-2xl"
+        dir="rtl"
+        lang="ar"
+        style={{ lineHeight: "2.2" }}
+      >
+        {ayah.text}
+      </p>
+
+      {/* Translation */}
+      {ayah.translation && (
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          {ayah.translation}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Daily Target Settings ──────────────────────────────────────────────────
+
+function DailyTargetCard({
+  progress,
+}: {
+  progress: QuranProgressSummary;
+}) {
+  const [settings, setSettings] = useState<QuranGoalSettings | null>(
+    quranGoalService.getGoalSettings(),
+  );
+  const [editing, setEditing] = useState(false);
+  const [targetType, setTargetType] = useState<"minutes" | "ayahs">(
+    settings?.targetType ?? "minutes",
+  );
+  const [targetValue, setTargetValue] = useState(
+    settings?.targetValue ?? 10,
+  );
+
+  const handleSave = () => {
+    const newSettings = quranGoalService.createGoalSettings({
+      userId: "local",
+      targetType,
+      targetValue,
+      isEnabled: true,
+      prayerAnchor: settings?.prayerAnchor ?? "none",
+    });
+    setSettings(newSettings);
+    setEditing(false);
+    toast.success("Daily Qur'an target updated");
+  };
+
+  if (!settings?.isEnabled && !editing) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center">
+          <Target className="mx-auto mb-2 size-6 text-muted-foreground/30" />
+          <p className="text-sm text-muted-foreground">
+            No daily target set
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-3"
+            onClick={() => setEditing(true)}
+          >
+            Set a target
+          </Button>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Recent Logs */}
+  const current =
+    settings?.targetType === "minutes"
+      ? progress.daily.minutesRead
+      : progress.daily.ayahsRead;
+  const target = settings?.targetValue ?? 10;
+  const pct = Math.min(100, Math.round((current / target) * 100));
+
+  if (editing) {
+    const inputClass =
+      "rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring w-full";
+
+    return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Recent Sessions</CardTitle>
+          <CardTitle className="text-base">Daily Qur&apos;an Target</CardTitle>
         </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {logs.slice(0, 7).map((log) => (
-              <li
-                key={log.id}
-                className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2.5"
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Type
+              </label>
+              <select
+                value={targetType}
+                onChange={(e) =>
+                  setTargetType(e.target.value as "minutes" | "ayahs")
+                }
+                className={inputClass}
               >
-                <div>
-                  <p className="text-sm font-medium">{log.pages} pages</p>
-                  {log.note && <p className="text-xs text-muted-foreground">{log.note}</p>}
-                </div>
-                <div className="text-right text-xs text-muted-foreground">
-                  <p>{log.minutes} min</p>
-                  <p className="font-medium">{log.date}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+                <option value="minutes">Minutes</option>
+                <option value="ayahs">Ayahs</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">
+                Daily target
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={500}
+                value={targetValue}
+                onChange={(e) => setTargetValue(Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} size="sm" className="flex-1">
+              Save
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditing(false)}
+            >
+              Cancel
+            </Button>
+          </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  return (
+    <Card className={cn(pct >= 100 && "border-emerald/30 bg-emerald/5")}>
+      <CardContent className="py-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Daily Target
+            </p>
+            <p className="text-lg font-bold">
+              {current} / {target}{" "}
+              <span className="text-sm font-normal text-muted-foreground">
+                {settings?.targetType}
+              </span>
+            </p>
+          </div>
+          <div className="text-right">
+            {pct >= 100 ? (
+              <Badge className="bg-emerald/10 text-emerald border-emerald/20 flex items-center gap-1">
+                <Check className="size-3" />
+                Completed
+              </Badge>
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                className="text-xs text-primary hover:underline"
+              >
+                Edit
+              </button>
+            )}
+          </div>
+        </div>
+        <Progress
+          value={pct}
+          className={cn("mt-2 h-2", pct >= 100 && "[&>div]:bg-emerald")}
+        />
+        {pct < 100 && pct > 0 && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Keep going — you&apos;re {pct}% there today.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Streak & Stats Card ────────────────────────────────────────────────────
+
+function StreakCard({
+  progress,
+}: {
+  progress: QuranProgressSummary;
+}) {
+  const { streak } = progress;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Star className="size-4 text-gold" />
+          Reading Consistency
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-muted/40 p-3 text-center">
+            <p className="text-2xl font-bold text-emerald">
+              {streak.currentStreak}
+            </p>
+            <p className="text-[11px] text-muted-foreground">Current streak</p>
+          </div>
+          <div className="rounded-xl bg-muted/40 p-3 text-center">
+            <p className="text-2xl font-bold">{streak.longestStreak}</p>
+            <p className="text-[11px] text-muted-foreground">Longest streak</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{streak.daysReadThisWeek} days this week</span>
+          <span>{streak.daysReadThisMonth} days this month</span>
+        </div>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{progress.totalSessions} total sessions</span>
+          <span>{progress.totalMinutes} total minutes</span>
+        </div>
+        {streak.currentStreak === 0 && (
+          <p className="text-center text-xs text-muted-foreground italic">
+            Your reading rhythm can start again today.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
+export function QuranPageClient() {
+  const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
+  const [progress, setProgress] = useState<QuranProgressSummary | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    Promise.resolve().then(() => {
+      if (mounted) {
+        setProgress(quranProgressService.getProgressSummary());
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [selectedSurah]);
+
+  if (!progress) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (selectedSurah) {
+    return (
+      <QuranReader
+        surahNumber={selectedSurah}
+        onBack={() => setSelectedSurah(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <SurahBrowser onSelectSurah={setSelectedSurah} progress={progress} />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <DailyTargetCard progress={progress} />
+        <StreakCard progress={progress} />
+      </div>
+
+      {/* Link to bookmarks & goals */}
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/quran/bookmarks"
+          className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted/50"
+        >
+          <BookmarkCheck className="size-4 text-gold" />
+          My Bookmarks
+        </Link>
+        <Link
+          href="/goals"
+          className="flex items-center gap-1.5 rounded-xl border border-border/70 bg-card px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted/50"
+        >
+          <Target className="size-4 text-primary" />
+          Spiritual Goals
+        </Link>
+      </div>
     </div>
   );
 }

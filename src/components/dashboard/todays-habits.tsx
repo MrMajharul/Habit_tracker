@@ -5,6 +5,7 @@ import {
   BookOpen,
   Code2,
   Dumbbell,
+  Flame,
   GraduationCap,
   HeartHandshake,
   Moon,
@@ -86,7 +87,7 @@ export function TodaysHabits({
     );
 
     if (nextCompleted) {
-      toast.success(`Completed "${habitName}"! 🔥`, {
+      toast.success(`Completed "${habitName}"!`, {
         description: "Consistency recorded in your personal log.",
       });
     } else {
@@ -197,7 +198,7 @@ export function TodaysHabits({
 
                   {typeof habit.streak === "number" && habit.streak > 0 && (
                     <div className="flex shrink-0 items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                      <span>🔥</span>
+                      <Flame className="size-3.5 text-amber-500" />
                       <span>{habit.streak}d</span>
                     </div>
                   )}

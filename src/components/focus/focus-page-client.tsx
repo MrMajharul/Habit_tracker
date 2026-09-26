@@ -173,7 +173,7 @@ export function FocusPageClient() {
         actualMinutes,
       );
 
-      toast.success("Alhamdulillah! Focus session completed 🎉", {
+      toast.success("Alhamdulillah! Focus session completed", {
         description: `Logged ${actualMinutes} minutes on ${selectedTask?.title || selectedSubject?.name || "Deep Work"}.`,
         duration: 8000,
       });
@@ -391,11 +391,24 @@ export function FocusPageClient() {
                   : "border-emerald/30 bg-emerald/10 text-emerald",
               )}
             >
-              {mode === "FOCUS" || mode === "CUSTOM"
-                ? `⏱ Focus — ${selectedTask?.title || selectedSubject?.name || "General Deep Work"}`
-                : mode === "SHORT_BREAK"
-                  ? "☕ Short Break"
-                  : "🛋 Long Break"}
+              <span className="flex items-center gap-1.5">
+                {mode === "FOCUS" || mode === "CUSTOM" ? (
+                  <>
+                    <Clock className="size-3" />
+                    <span>Focus — {selectedTask?.title || selectedSubject?.name || "General Deep Work"}</span>
+                  </>
+                ) : mode === "SHORT_BREAK" ? (
+                  <>
+                    <Coffee className="size-3" />
+                    <span>Short Break</span>
+                  </>
+                ) : (
+                  <>
+                    <Armchair className="size-3" />
+                    <span>Long Break</span>
+                  </>
+                )}
+              </span>
             </Badge>
 
             {status === "PAUSED" && (

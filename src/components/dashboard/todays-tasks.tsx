@@ -109,7 +109,7 @@ export function TodaysTasks({
         const isDone = t.status === "completed" || t.status === "COMPLETED";
         const nextStatus: TaskStatus = isDone ? "todo" : "completed";
         if (!isDone) {
-          toast.success("Task completed! Barakallahu feek ✓");
+          toast.success("Task completed! Barakallahu feek");
         }
         return { ...t, status: nextStatus };
       }),

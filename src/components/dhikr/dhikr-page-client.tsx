@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, RotateCcw, Star } from "lucide-react";
+import { Check, Minus, Plus, RotateCcw, Star } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -123,9 +123,9 @@ const DHIKR_SETS: Record<string, DhikrItem[]> = {
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  morning: "🌅 Morning Adhkar",
-  evening: "🌇 Evening Adhkar",
-  after_prayer: "🤲 After Prayer",
+  morning: "Morning Adhkar",
+  evening: "Evening Adhkar",
+  after_prayer: "After Prayer",
 };
 
 // ─── Dhikr Counter Card ───────────────────────────────────────────────────────
@@ -211,8 +211,9 @@ function DhikrCard({
           </div>
 
           {isComplete && (
-            <Badge className="mx-auto bg-emerald/10 text-emerald">
-              ✓ Complete
+            <Badge className="mx-auto bg-emerald/10 text-emerald flex items-center gap-1">
+              <Check className="size-3" />
+              Complete
             </Badge>
           )}
 
@@ -251,7 +252,7 @@ export function DhikrPageClient() {
     updateItem(id, (d) => {
       const next = d.count + 1;
       if (next === d.target) {
-        toast.success(`${d.transliteration} completed! 🤲`);
+        toast.success(`${d.transliteration} completed!`);
       }
       return { ...d, count: Math.min(d.target, next) };
     });
@@ -295,7 +296,7 @@ export function DhikrPageClient() {
             <Star className="mx-auto mb-2 size-8 text-gold" />
             <p className="font-semibold">All adhkar complete!</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              MashAllah! May Allah accept your remembrance. 🤲
+              MashAllah! May Allah accept your remembrance.
             </p>
           </CardContent>
         </Card>

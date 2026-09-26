@@ -18,7 +18,7 @@ export function GreetingSection({
           Assalamu Alaikum
         </p>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {profile.name} 👋
+          {profile.name}
         </h1>
         <div className="flex flex-col gap-0.5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
           <span>{formatGregorianDate(date)}</span>

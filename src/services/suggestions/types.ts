@@ -3,7 +3,8 @@ export type SuggestionCategory =
   | "worship"
   | "study"
   | "habit"
-  | "reflection";
+  | "reflection"
+  | "quran";
 
 export type SuggestionType =
   | "DEFAULT"
@@ -13,7 +14,12 @@ export type SuggestionType =
   | "UPCOMING_DEADLINE"
   | "OVERDUE_TASK"
   | "POST_PRAYER_TASK"
-  | "DAILY_PLAN";
+  | "DAILY_PLAN"
+  | "QURAN_READING"
+  | "QURAN_TARGET"
+  | "QURAN_CONTINUE"
+  | "POST_FAJR_QURAN"
+  | "POST_MAGHRIB_QURAN";
 
 export interface SuggestionItem {
   id: string;
@@ -65,6 +71,14 @@ export interface SuggestionContext {
   }>;
   focusMinutesToday?: number;
   completedSessionsToday?: number;
+  // Phase 4: Qur'an context
+  quranMinutesToday?: number;
+  quranAyahsToday?: number;
+  quranTargetMet?: boolean;
+  quranTargetType?: "minutes" | "ayahs";
+  quranTargetValue?: number;
+  quranLastSurah?: string;
+  quranLastAyah?: number;
 }
 
 export interface SuggestionEngine {

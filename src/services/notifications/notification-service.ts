@@ -5,7 +5,8 @@ export type NotificationType =
   | "TaskReminder"
   | "FocusReminder"
   | "DailyReflection"
-  | "HadithReminder";
+  | "HadithReminder"
+  | "QuranReminder";
 
 export type NotificationPermissionState =
   | "default"
@@ -34,6 +35,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     FocusReminder: true,
     DailyReflection: true,
     HadithReminder: true,
+    QuranReminder: true,
   },
 };
 
@@ -152,7 +154,7 @@ export class NotificationService {
     // In browser context: if within 1 hour, set timeout
     if (diffMs > 0 && diffMs < 3600000) {
       setTimeout(() => {
-        this.provider.send(`🕌 ${prayerName} Prayer Time`, {
+        this.provider.send(`${prayerName} Prayer Time`, {
           body: `Time for ${prayerName} prayer. Plan your day around Salah.`,
           tag: `prayer-${prayerName}`,
         });
@@ -171,7 +173,7 @@ export class NotificationService {
 
     if (this.isInQuietHours()) return false;
 
-    return this.provider.send(`✨ Habit Reminder`, {
+    return this.provider.send(`Habit Reminder`, {
       body: `Time for: ${habitName}${anchor && anchor !== "none" ? ` (after ${anchor})` : ""}`,
       tag: `habit-${habitName}`,
     });
@@ -186,7 +188,7 @@ export class NotificationService {
 
     if (this.isInQuietHours(dueDate)) return false;
 
-    return this.provider.send(`📋 Task Due Reminder`, {
+    return this.provider.send(`Task Due Reminder`, {
       body: `Your task "${taskTitle}" is due today. Organize your time with Istiqamaah.`,
       tag: `task-${taskTitle}`,
     });
@@ -201,7 +203,7 @@ export class NotificationService {
 
     if (this.isInQuietHours()) return false;
 
-    return this.provider.send(`⏳ Upcoming Task`, {
+    return this.provider.send(`Upcoming Task`, {
       body: `"${taskTitle}" starts in ${minutesUntil} minutes.`,
       tag: `task-upcoming-${taskTitle}`,
     });
@@ -216,7 +218,7 @@ export class NotificationService {
 
     if (this.isInQuietHours()) return false;
 
-    return this.provider.send(`⏱ Focus Session`, {
+    return this.provider.send(`Focus Session`, {
       body: `Time for a ${minutes}-minute focus session on ${sessionTitle}.`,
       tag: `focus-session-${sessionTitle}`,
     });
@@ -229,9 +231,49 @@ export class NotificationService {
     const prefs = this.getPreferences();
     if (!prefs.enabled || !prefs.categories.FocusReminder) return false;
 
-    return this.provider.send(`🎉 Focus Session Complete!`, {
+    return this.provider.send(`Focus Session Complete!`, {
       body: `Alhamdulillah! You completed ${minutes} minutes on ${sessionTitle}. Take a break and prepare for prayer.`,
       tag: `focus-complete-${sessionTitle}`,
+    });
+  }
+
+  async scheduleQuranReadingReminder(
+    surahName?: string,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.QuranReminder) return false;
+    if (this.isInQuietHours()) return false;
+
+    const body = surahName
+      ? `Continue your Qur'an reading — Surah ${surahName} awaits.`
+      : "Take a moment to read Qur'an. Even a few ayahs bring barakah.";
+
+    return this.provider.send(`Qur'an Reading Reminder`, {
+      body,
+      tag: "quran-reading-reminder",
+    });
+  }
+
+  async sendQuranTargetCompleteNotification(): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.QuranReminder) return false;
+
+    return this.provider.send(`Qur'an Target Completed!`, {
+      body: "You've completed today's Qur'an reading target. Alhamdulillah!",
+      tag: "quran-target-complete",
+    });
+  }
+
+  async scheduleQuranGoalReminder(
+    goalTitle: string,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.QuranReminder) return false;
+    if (this.isInQuietHours()) return false;
+
+    return this.provider.send(`Qur'an Goal Reminder`, {
+      body: `Your goal "${goalTitle}" is progressing. Continue your reading today.`,
+      tag: `quran-goal-${goalTitle}`,
     });
   }
 }

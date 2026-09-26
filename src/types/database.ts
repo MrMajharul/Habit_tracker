@@ -390,6 +390,110 @@ type DailyReflectionInsert = {
   created_at?: string;
 };
 
+// ─── Quran Reading Sessions ──────────────────────────────────────────────────
+
+type QuranReadingSessionRow = {
+  id: string;
+  user_id: string;
+  surah_number: number;
+  start_ayah: number;
+  end_ayah: number;
+  minutes_read: number;
+  reading_date: string;
+  note: string | null;
+  created_at: string;
+};
+
+type QuranReadingSessionInsert = {
+  id?: string;
+  user_id: string;
+  surah_number: number;
+  start_ayah: number;
+  end_ayah: number;
+  minutes_read?: number;
+  reading_date?: string;
+  note?: string | null;
+  created_at?: string;
+};
+
+// ─── Quran Bookmarks ─────────────────────────────────────────────────────────
+
+type QuranBookmarkRow = {
+  id: string;
+  user_id: string;
+  surah_number: number;
+  ayah_number: number;
+  note: string | null;
+  created_at: string;
+};
+
+type QuranBookmarkInsert = {
+  id?: string;
+  user_id: string;
+  surah_number: number;
+  ayah_number: number;
+  note?: string | null;
+  created_at?: string;
+};
+
+// ─── Quran Goal Settings ─────────────────────────────────────────────────────
+
+type QuranGoalSettingsRow = {
+  id: string;
+  user_id: string;
+  target_type: string;
+  target_value: number;
+  is_enabled: boolean;
+  prayer_anchor: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type QuranGoalSettingsInsert = {
+  id?: string;
+  user_id: string;
+  target_type: string;
+  target_value: number;
+  is_enabled?: boolean;
+  prayer_anchor?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Spiritual Goals ─────────────────────────────────────────────────────────
+
+type SpiritualGoalRow = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  description: string | null;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  start_date: string;
+  target_date: string | null;
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type SpiritualGoalInsert = {
+  id?: string;
+  user_id: string;
+  type: string;
+  title: string;
+  description?: string | null;
+  target_value: number;
+  current_value?: number;
+  unit?: string;
+  start_date?: string;
+  target_date?: string | null;
+  is_completed?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 export type Database = {
@@ -471,6 +575,30 @@ export type Database = {
         Row: DailyReflectionRow;
         Insert: DailyReflectionInsert;
         Update: Partial<DailyReflectionInsert>;
+        Relationships: [];
+      };
+      quran_reading_sessions: {
+        Row: QuranReadingSessionRow;
+        Insert: QuranReadingSessionInsert;
+        Update: Partial<QuranReadingSessionInsert>;
+        Relationships: [];
+      };
+      quran_bookmarks: {
+        Row: QuranBookmarkRow;
+        Insert: QuranBookmarkInsert;
+        Update: Partial<QuranBookmarkInsert>;
+        Relationships: [];
+      };
+      quran_goal_settings: {
+        Row: QuranGoalSettingsRow;
+        Insert: QuranGoalSettingsInsert;
+        Update: Partial<QuranGoalSettingsInsert>;
+        Relationships: [];
+      };
+      spiritual_goals: {
+        Row: SpiritualGoalRow;
+        Insert: SpiritualGoalInsert;
+        Update: Partial<SpiritualGoalInsert>;
         Relationships: [];
       };
     };

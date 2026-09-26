@@ -1,18 +1,35 @@
-import { Moon, Star } from "lucide-react";
+import {
+  AlarmClock,
+  BookOpen,
+  Building2,
+  Heart,
+  Moon,
+  Sparkles,
+  Star,
+  Sunset,
+  Target,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Ramadan" };
 
-const RAMADAN_FEATURES = [
-  { icon: "🌙", title: "Fasting Tracker", description: "Log daily fast — suhoor and iftar times" },
-  { icon: "⏰", title: "Suhoor Reminder", description: "Wake-up alert before Fajr" },
-  { icon: "🌅", title: "Iftar Countdown", description: "Real-time countdown to Maghrib" },
-  { icon: "🕌", title: "Taraweeh Tracker", description: "Log nightly Taraweeh completion" },
-  { icon: "📖", title: "Qur'an Khatm Goal", description: "Complete the Qur'an during Ramadan" },
-  { icon: "💝", title: "Sadaqah Log", description: "Track your charity and giving" },
-  { icon: "🤲", title: "Ramadan Dhikr", description: "Special adhkar for the blessed month" },
-  { icon: "🎯", title: "Daily Ramadan Goals", description: "Custom goals for each day of Ramadan" },
+interface RamadanFeature {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const RAMADAN_FEATURES: RamadanFeature[] = [
+  { icon: Moon, title: "Fasting Tracker", description: "Log daily fast — suhoor and iftar times" },
+  { icon: AlarmClock, title: "Suhoor Reminder", description: "Wake-up alert before Fajr" },
+  { icon: Sunset, title: "Iftar Countdown", description: "Real-time countdown to Maghrib" },
+  { icon: Building2, title: "Taraweeh Tracker", description: "Log nightly Taraweeh completion" },
+  { icon: BookOpen, title: "Qur'an Khatm Goal", description: "Complete the Qur'an during Ramadan" },
+  { icon: Heart, title: "Sadaqah Log", description: "Track your charity and giving" },
+  { icon: Sparkles, title: "Ramadan Dhikr", description: "Special adhkar for the blessed month" },
+  { icon: Target, title: "Daily Ramadan Goals", description: "Custom goals for each day of Ramadan" },
 ];
 
 export default function RamadanPage() {
@@ -46,7 +63,7 @@ export default function RamadanPage() {
             <Card key={feature.title} className="border-border/60">
               <CardHeader className="pb-2 pt-4">
                 <CardTitle className="flex items-center gap-2 text-sm">
-                  <span>{feature.icon}</span>
+                  <feature.icon className="size-4 text-emerald shrink-0" />
                   {feature.title}
                 </CardTitle>
               </CardHeader>

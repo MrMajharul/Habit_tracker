@@ -251,7 +251,7 @@ export function GoalsPageClient() {
       if (g.id !== id) return g;
       const next = Math.min(g.targetValue, g.currentValue + 1);
       const done = next >= g.targetValue;
-      if (done) toast.success(`Goal "${g.title}" achieved! 🎉`);
+      if (done) toast.success(`Goal "${g.title}" achieved!`);
       return { ...g, currentValue: next, isCompleted: done };
     }));
   };

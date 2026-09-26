@@ -121,7 +121,7 @@ export function AddHabitDialog({
         isActive: true,
       });
 
-      toast.success("New habit created 🎉", {
+      toast.success("New habit created", {
         description: `"${newHabit.name}" has been added to your daily routine.`,
       });
 
@@ -178,13 +178,13 @@ export function AddHabitDialog({
                   Category
                 </Label>
                 <select id="h-cat" {...register("category")} className={inputClass}>
-                  <option value="islamic">🕌 Islamic / Worship</option>
-                  <option value="health">🏃 Health &amp; Fitness</option>
-                  <option value="study">📚 Study &amp; Learning</option>
-                  <option value="work">💼 Work &amp; Career</option>
-                  <option value="personal">🌱 Personal Growth</option>
-                  <option value="family">👨‍👩‍👧 Family &amp; Community</option>
-                  <option value="other">✨ Other</option>
+                  <option value="islamic">Islamic / Worship</option>
+                  <option value="health">Health &amp; Fitness</option>
+                  <option value="study">Study &amp; Learning</option>
+                  <option value="work">Work &amp; Career</option>
+                  <option value="personal">Personal Growth</option>
+                  <option value="family">Family &amp; Community</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
 
