@@ -180,18 +180,26 @@ type SubjectRow = {
   id: string;
   user_id: string;
   name: string;
-  color: string | null;
-  icon: string | null;
+  description: string | null;
+  color: string;
+  icon: string;
+  weekly_target_minutes: number;
+  is_archived: boolean;
   created_at: string;
+  updated_at: string;
 };
 
 type SubjectInsert = {
   id?: string;
   user_id: string;
   name: string;
-  color?: string | null;
-  icon?: string | null;
+  description?: string | null;
+  color?: string;
+  icon?: string;
+  weekly_target_minutes?: number;
+  is_archived?: boolean;
   created_at?: string;
+  updated_at?: string;
 };
 
 // ─── Tasks ───────────────────────────────────────────────────────────────────
@@ -202,10 +210,12 @@ type TaskRow = {
   subject_id: string | null;
   title: string;
   description: string | null;
-  priority: string; // 'low' | 'medium' | 'high'
-  status: string; // 'todo' | 'in_progress' | 'completed'
-  deadline: string | null;
+  priority: string;
+  status: string;
+  due_date: string | null;
+  deadline?: string | null;
   estimated_minutes: number | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -218,8 +228,10 @@ type TaskInsert = {
   description?: string | null;
   priority?: string;
   status?: string;
+  due_date?: string | null;
   deadline?: string | null;
   estimated_minutes?: number | null;
+  completed_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -261,25 +273,35 @@ type GoalInsert = {
 type FocusSessionRow = {
   id: string;
   user_id: string;
+  task_id: string | null;
   subject_id: string | null;
-  duration_minutes: number;
-  mode: string; // 'pomodoro' | 'custom'
-  completed: boolean;
-  note: string | null;
   started_at: string;
   ended_at: string | null;
+  planned_minutes: number;
+  actual_minutes: number;
+  status: string;
+  created_at: string;
+  duration_minutes?: number;
+  mode?: string;
+  completed?: boolean;
+  note?: string | null;
 };
 
 type FocusSessionInsert = {
   id?: string;
   user_id: string;
+  task_id?: string | null;
   subject_id?: string | null;
-  duration_minutes: number;
+  started_at?: string;
+  ended_at?: string | null;
+  planned_minutes?: number;
+  actual_minutes?: number;
+  status?: string;
+  created_at?: string;
+  duration_minutes?: number;
   mode?: string;
   completed?: boolean;
   note?: string | null;
-  started_at?: string;
-  ended_at?: string | null;
 };
 
 // ─── Quran Progress ──────────────────────────────────────────────────────────

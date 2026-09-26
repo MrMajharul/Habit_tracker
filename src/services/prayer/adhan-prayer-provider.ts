@@ -123,7 +123,7 @@ export class AdhanPrayerProvider implements PrayerTimeProvider {
       };
     });
 
-    const now = new Date();
+    const now = date || new Date();
     // Find next prayer today
     let nextPrayer: PrayerTime | null =
       prayers.find((p) => p.time.getTime() > now.getTime()) ?? null;

@@ -28,10 +28,29 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
         h.prayerAnchor?.toLowerCase() === nextPrayer.toLowerCase(),
     );
 
-    // Case 1: Night / Evening (After 9 PM or after Isha)
+    const pendingTasks = context.pendingTasks ?? [];
+
+    // Check for overdue or due-today tasks
+    const todayStr = now.toISOString().slice(0, 10);
+    const overdueTask = pendingTasks.find(
+      (t) =>
+        t.status !== "COMPLETED" &&
+        t.status !== "completed" &&
+        (t.isOverdue || (t.dueDate && t.dueDate < todayStr)),
+    );
+    const dueTodayTask = pendingTasks.find(
+      (t) =>
+        t.status !== "COMPLETED" &&
+        t.status !== "completed" &&
+        (t.isDueToday || (t.dueDate && t.dueDate.startsWith(todayStr))),
+    );
+
+    // Case 1: Night / Evening (After 9 PM or before 4 AM)
     if (hour >= 21 || hour < 4) {
       return {
         id: "evening-wind-down",
+        type: "DAILY_PLAN",
+        planLayer: "spiritual",
         contextTitle: "🌙 Evening Reflection & Rest",
         contextSubtitle:
           "Worship and study for today are resting. Prepare your heart for tomorrow.",
@@ -45,6 +64,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
             durationMinutes: 10,
             actionUrl: "/quran",
             actionLabel: "Read",
+            type: "POST_PRAYER_TASK",
           },
           {
             id: "night-reflection",
@@ -54,6 +74,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
             durationMinutes: 5,
             actionUrl: "#daily-reflection",
             actionLabel: "Reflect",
+            type: "DAILY_PLAN",
           },
           {
             id: "sleep-adhkar",
@@ -63,6 +84,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
             durationMinutes: 5,
             actionUrl: "/dhikr",
             actionLabel: "Dhikr",
+            type: "POST_PRAYER_TASK",
           },
         ],
         reflectionPrompt:
@@ -85,6 +107,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           durationMinutes: 20,
           actionUrl: "/quran",
           actionLabel: "Recite",
+          type: "POST_PRAYER_TASK",
         },
         {
           id: "morning-adhkar",
@@ -94,6 +117,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           durationMinutes: 10,
           actionUrl: "/dhikr",
           actionLabel: "Adhkar",
+          type: "POST_PRAYER_TASK",
         },
         {
           id: "plan-day",
@@ -101,13 +125,16 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           category: "study",
           title: "Review Today's Study & Tasks",
           durationMinutes: 10,
-          actionUrl: "/study",
+          actionUrl: "/tasks",
           actionLabel: "Plan",
+          type: "DAILY_PLAN",
         },
       ];
 
       return {
         id: "morning-barakah",
+        type: "DAILY_PLAN",
+        planLayer: "integrated",
         contextTitle: "🌅 Morning Barakah Routine",
         contextSubtitle:
           "The hours after Fajr hold blessed productivity. Fit in worship before worldly tasks.",
@@ -116,61 +143,147 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
       };
     }
 
-    // Case 3: Prayer window with 30-65 minutes remaining (e.g. before Asr or Dhuhr)
-    if (minutesLeft >= 25 && minutesLeft <= 75) {
-      const topTask = context.pendingTasks?.[0];
-      const taskTitle = topTask?.title ?? "Compiler Design Study";
-      const studyDuration = Math.min(30, Math.max(15, minutesLeft - 15));
-
-      const items: SuggestionItem[] = [
-        {
-          id: "study-sprint",
-          icon: "📚",
-          category: "study",
-          title: `${taskTitle} — ${studyDuration} min`,
-          durationMinutes: studyDuration,
-          actionUrl: "/focus",
-          actionLabel: "Focus",
-        },
-        {
-          id: "quran-window",
-          icon: "📖",
-          category: "worship",
-          title: nextAnchorHabit ? nextAnchorHabit.name : "Qur'an — 10 min",
-          durationMinutes: 10,
-          actionUrl: "/quran",
-          actionLabel: "Read",
-        },
-        {
-          id: "dhikr-prep",
-          icon: "🤲",
-          category: "worship",
-          title: "Dhikr & Wudu Prep — 5 min",
-          durationMinutes: 5,
-          actionUrl: "/dhikr",
-          actionLabel: "Dhikr",
-        },
-      ];
-
+    // Case 3: Overdue task needing gentle attention (and plenty of time before prayer)
+    if (overdueTask && minutesLeft > 35) {
+      const duration = Math.min(25, minutesLeft - 10);
       return {
-        id: `window-before-${nextPrayer.toLowerCase()}`,
-        contextTitle: `You have ${minutesLeft} minutes before ${nextPrayer}.`,
-        contextSubtitle:
-          "A balanced window to pair productive work with gentle worship.",
-        urgency: "gentle",
+        id: `overdue-${overdueTask.id ?? "task"}`,
+        type: "OVERDUE_TASK",
+        planLayer: "productivity",
+        contextTitle: `Gentle Reminder: ${overdueTask.title}`,
+        contextSubtitle: `You have an unfinished task. A calm ${duration}-min session fits well before ${nextPrayer}.`,
+        urgency: "opportunity",
         nextPrayerName: nextPrayer,
         remainingMinutes: minutesLeft,
-        items,
+        items: [
+          {
+            id: `focus-overdue-${overdueTask.id ?? "1"}`,
+            icon: "⏱",
+            category: "study",
+            title: `${overdueTask.title} — ${duration} min`,
+            durationMinutes: duration,
+            actionUrl: `/focus?task=${encodeURIComponent(overdueTask.title)}`,
+            actionLabel: "Start Focus",
+            type: "FOCUS_SESSION",
+          },
+          {
+            id: "short-dhikr",
+            icon: "🤲",
+            category: "worship",
+            title: "Pre-prayer Istighfar — 5 min",
+            durationMinutes: 5,
+            actionUrl: "/dhikr",
+            actionLabel: "Dhikr",
+            type: "POST_PRAYER_TASK",
+          },
+        ],
       };
     }
 
-    // Case 4: Approaching Prayer (< 25 minutes)
+    // Case 4: Task due today (Upcoming Deadline)
+    if (dueTodayTask && minutesLeft >= 30) {
+      const focusMins = Math.min(25, minutesLeft - 10);
+      return {
+        id: `due-today-${dueTodayTask.id ?? "task"}`,
+        type: "UPCOMING_DEADLINE",
+        planLayer: "productivity",
+        contextTitle: `Due Today: ${dueTodayTask.title}`,
+        contextSubtitle: `A focused ${focusMins}-minute session would fit comfortably before ${nextPrayer}.`,
+        urgency: "opportunity",
+        nextPrayerName: nextPrayer,
+        remainingMinutes: minutesLeft,
+        items: [
+          {
+            id: `focus-deadline-${dueTodayTask.id ?? "1"}`,
+            icon: "⏱",
+            category: "study",
+            title: `${dueTodayTask.title} — ${focusMins} min`,
+            durationMinutes: focusMins,
+            actionUrl: `/focus?task=${encodeURIComponent(dueTodayTask.title)}`,
+            actionLabel: "Focus",
+            type: "FOCUS_SESSION",
+          },
+          {
+            id: "prayer-prep",
+            icon: "💧",
+            category: "prayer",
+            title: "Wudu & Prayer Preparation",
+            durationMinutes: 5,
+            actionUrl: "/prayer",
+            actionLabel: "Prayer",
+            type: "POST_PRAYER_TASK",
+          },
+        ],
+      };
+    }
+
+    // Case 4.5: Post-Dhuhr Focus Block (12 PM - 3 PM with ample time before Asr)
+    if (hour >= 12 && hour < 15 && minutesLeft >= 90) {
+      const topTask = pendingTasks[0];
+      const taskTitle = topTask?.title ?? "Machine Learning Study";
+      return {
+        id: "post-dhuhr-focus",
+        type: "POST_PRAYER_TASK",
+        planLayer: "integrated",
+        contextTitle: "Post-Dhuhr Focus Block",
+        contextSubtitle: `After Dhuhr, you have ${minutesLeft} minutes available. A balanced study sprint fits comfortably.`,
+        urgency: "opportunity",
+        nextPrayerName: nextPrayer,
+        remainingMinutes: minutesLeft,
+        items: [
+          {
+            id: "post-dhuhr-task",
+            icon: "📚",
+            category: "study",
+            title: `${taskTitle} — 40 min`,
+            durationMinutes: 40,
+            actionUrl: `/focus?task=${encodeURIComponent(taskTitle)}`,
+            actionLabel: "Start Focus",
+            type: "TASK_RECOMMENDATION",
+          },
+          {
+            id: "post-dhuhr-break",
+            icon: "☕",
+            category: "reflection",
+            title: "Hydrate & Mindful Break — 10 min",
+            durationMinutes: 10,
+            actionUrl: "/focus",
+            actionLabel: "Break",
+            type: "STUDY_WINDOW",
+          },
+          {
+            id: "post-dhuhr-secondary",
+            icon: "🔬",
+            category: "study",
+            title: "Research & Writing — 30 min",
+            durationMinutes: 30,
+            actionUrl: "/focus?subject=Research",
+            actionLabel: "Focus",
+            type: "TASK_RECOMMENDATION",
+          },
+          {
+            id: "post-dhuhr-dhikr",
+            icon: "🤲",
+            category: "worship",
+            title: "Mid-day Dhikr & Tasbeeh — 5 min",
+            durationMinutes: 5,
+            actionUrl: "/dhikr",
+            actionLabel: "Dhikr",
+            type: "POST_PRAYER_TASK",
+          },
+        ],
+      };
+    }
+
+    // Case 5: Approaching Prayer (< 25 minutes)
     if (minutesLeft < 25 && minutesLeft > 0) {
       return {
         id: `approaching-${nextPrayer.toLowerCase()}`,
+        type: "POST_PRAYER_TASK",
+        planLayer: "spiritual",
         contextTitle: `🕌 ${nextPrayer} is approaching in ${minutesLeft}m`,
         contextSubtitle:
-          "Wind down active tasks, perform fresh Wudu, and prepare for congregational prayer.",
+          "Wind down active tasks, perform fresh Wudu, and prepare for prayer with presence of mind.",
         urgency: "gentle",
         nextPrayerName: nextPrayer,
         remainingMinutes: minutesLeft,
@@ -183,6 +296,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
             durationMinutes: 5,
             actionUrl: "/prayer",
             actionLabel: "View",
+            type: "POST_PRAYER_TASK",
           },
           {
             id: "istighfar",
@@ -192,14 +306,71 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
             durationMinutes: 5,
             actionUrl: "/dhikr",
             actionLabel: "Dhikr",
+            type: "POST_PRAYER_TASK",
           },
         ],
+      };
+    }
+
+    // Case 6: Prayer window with 25-90 minutes remaining (e.g. before Asr or Dhuhr)
+    if (minutesLeft >= 25) {
+      const topTask = pendingTasks[0];
+      const taskTitle = topTask?.title ?? "Compiler Design Study";
+      const studyDuration = Math.min(30, Math.max(15, minutesLeft - 15));
+      const breakDuration = Math.max(5, Math.min(15, minutesLeft - studyDuration - 10));
+
+      const items: SuggestionItem[] = [
+        {
+          id: "study-sprint",
+          icon: "📚",
+          category: "study",
+          title: `${taskTitle} — ${studyDuration} min`,
+          durationMinutes: studyDuration,
+          actionUrl: `/focus?task=${encodeURIComponent(taskTitle)}`,
+          actionLabel: "Focus",
+          type: "TASK_RECOMMENDATION",
+        },
+        {
+          id: "quran-window",
+          icon: "📖",
+          category: "worship",
+          title: nextAnchorHabit ? nextAnchorHabit.name : "Dhikr & Tasbeeh — 5 min",
+          durationMinutes: 5,
+          actionUrl: "/dhikr",
+          actionLabel: "Dhikr",
+          type: "POST_PRAYER_TASK",
+        },
+        {
+          id: "break-window",
+          icon: "☕",
+          category: "reflection",
+          title: `Rest & Transition Break — ${breakDuration} min`,
+          durationMinutes: breakDuration,
+          actionUrl: "/focus",
+          actionLabel: "Break",
+          type: "STUDY_WINDOW",
+        },
+      ];
+
+      return {
+        id: `window-before-${nextPrayer.toLowerCase()}`,
+        type: "STUDY_WINDOW",
+        planLayer: "integrated",
+        contextTitle: `You have ${minutesLeft} minutes before ${nextPrayer}.`,
+        contextSubtitle:
+          "A balanced window to pair productive work with gentle worship and a break.",
+        urgency: "gentle",
+        nextPrayerName: nextPrayer,
+        remainingMinutes: minutesLeft,
+        items,
       };
     }
 
     // Default Mid-day Focus
     return {
       id: "midday-focus",
+      type: "DAILY_PLAN",
+      planLayer: "integrated",
       contextTitle: "⚡ Afternoon Deep Work Window",
       contextSubtitle:
         "Align your study and habit goals with calm focus.",
@@ -213,6 +384,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           durationMinutes: 25,
           actionUrl: "/focus",
           actionLabel: "Start",
+          type: "FOCUS_SESSION",
         },
         {
           id: "habit-check",
@@ -222,6 +394,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           durationMinutes: 10,
           actionUrl: "/habits",
           actionLabel: "Check",
+          type: "DAILY_PLAN",
         },
       ],
     };

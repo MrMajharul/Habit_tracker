@@ -8,6 +8,8 @@ const STATIC_ASSETS = [
   "/prayer",
   "/habits",
   "/focus",
+  "/tasks",
+  "/subjects",
   "/quran",
   "/dhikr",
   "/manifest.webmanifest",

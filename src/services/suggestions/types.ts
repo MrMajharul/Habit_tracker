@@ -5,6 +5,16 @@ export type SuggestionCategory =
   | "habit"
   | "reflection";
 
+export type SuggestionType =
+  | "DEFAULT"
+  | "TASK_RECOMMENDATION"
+  | "STUDY_WINDOW"
+  | "FOCUS_SESSION"
+  | "UPCOMING_DEADLINE"
+  | "OVERDUE_TASK"
+  | "POST_PRAYER_TASK"
+  | "DAILY_PLAN";
+
 export interface SuggestionItem {
   id: string;
   icon: string;
@@ -13,10 +23,12 @@ export interface SuggestionItem {
   durationMinutes: number;
   actionUrl: string;
   actionLabel?: string;
+  type?: SuggestionType;
 }
 
 export interface SmartSuggestion {
   id: string;
+  type?: SuggestionType;
   contextTitle: string;
   contextSubtitle: string;
   urgency: "calm" | "gentle" | "opportunity";
@@ -24,6 +36,7 @@ export interface SmartSuggestion {
   remainingMinutes?: number;
   items: SuggestionItem[];
   reflectionPrompt?: string;
+  planLayer?: "spiritual" | "personal" | "productivity" | "integrated";
 }
 
 export interface SuggestionContext {
@@ -40,10 +53,18 @@ export interface SuggestionContext {
     icon?: string;
   }>;
   pendingTasks?: Array<{
+    id?: string;
     title: string;
     subject?: string;
     estimatedMinutes?: number;
+    dueDate?: string | null;
+    status?: string;
+    priority?: string;
+    isOverdue?: boolean;
+    isDueToday?: boolean;
   }>;
+  focusMinutesToday?: number;
+  completedSessionsToday?: number;
 }
 
 export interface SuggestionEngine {

@@ -1,7 +1,18 @@
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 
-export type OfflineActionType = "LOG_HABIT" | "LOG_PRAYER" | "CREATE_HABIT";
+export type OfflineActionType =
+  | "LOG_HABIT"
+  | "LOG_PRAYER"
+  | "CREATE_HABIT"
+  | "create_task"
+  | "update_task"
+  | "delete_task"
+  | "toggle_task"
+  | "create_subject"
+  | "update_subject"
+  | "delete_subject"
+  | "save_focus_session";
 
 export interface OfflineAction {
   id: string;
@@ -64,6 +75,10 @@ export function enqueueOfflineAction(action: Omit<OfflineAction, "id" | "timesta
           a.payload.dateStr === action.payload.dateStr
         ),
     );
+  } else if (action.type === "delete_task") {
+    filtered = queue.filter((a) => a.payload?.id !== action.payload?.id);
+  } else if (action.type === "delete_subject") {
+    filtered = queue.filter((a) => a.payload?.id !== action.payload?.id);
   }
 
   filtered.push(newAction);
@@ -136,6 +151,72 @@ export async function flushOfflineQueue(): Promise<{
             .eq("prayer", prayer)
             .eq("date", dateStr);
         }
+        successCount++;
+      } else if (item.type === "create_task") {
+        await supabase.from("tasks").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "update_task") {
+        await supabase
+          .from("tasks")
+          .update({
+            ...item.payload.updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "delete_task") {
+        await supabase
+          .from("tasks")
+          .delete()
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "toggle_task") {
+        await supabase
+          .from("tasks")
+          .update({
+            status: item.payload.status,
+            completed_at:
+              item.payload.status === "COMPLETED"
+                ? new Date().toISOString()
+                : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "create_subject") {
+        await supabase.from("subjects").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "update_subject") {
+        await supabase
+          .from("subjects")
+          .update({
+            ...item.payload.updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "delete_subject") {
+        await supabase
+          .from("subjects")
+          .delete()
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "save_focus_session") {
+        await supabase.from("focus_sessions").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
         successCount++;
       }
     } catch (err) {

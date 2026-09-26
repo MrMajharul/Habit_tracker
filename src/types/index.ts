@@ -15,9 +15,24 @@ export type PrayerAnchor =
   | "maghrib"
   | "isha";
 
-export type TaskStatus = "todo" | "in_progress" | "completed";
+export type TaskStatus =
+  | "todo"
+  | "in_progress"
+  | "completed"
+  | "TODO"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CANCELLED";
 
-export type TaskPriority = "low" | "medium" | "high";
+export type TaskPriority =
+  | "low"
+  | "medium"
+  | "high"
+  | "urgent"
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH"
+  | "URGENT";
 
 export interface UserProfile {
   id: string;
@@ -88,6 +103,9 @@ export interface DashboardTask {
   priority: TaskPriority;
   status: TaskStatus;
   estimatedMinutes?: number;
+  dueDate?: string;
+  isTopTask?: boolean;
+  isNextTask?: boolean;
 }
 
 export interface ProgressOverview {

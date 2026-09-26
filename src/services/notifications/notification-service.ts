@@ -2,6 +2,8 @@ export type NotificationType =
   | "PrayerReminder"
   | "HabitReminder"
   | "StudyReminder"
+  | "TaskReminder"
+  | "FocusReminder"
   | "DailyReflection"
   | "HadithReminder";
 
@@ -28,6 +30,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     PrayerReminder: true,
     HabitReminder: true,
     StudyReminder: true,
+    TaskReminder: true,
+    FocusReminder: true,
     DailyReflection: true,
     HadithReminder: true,
   },
@@ -170,6 +174,64 @@ export class NotificationService {
     return this.provider.send(`✨ Habit Reminder`, {
       body: `Time for: ${habitName}${anchor && anchor !== "none" ? ` (after ${anchor})` : ""}`,
       tag: `habit-${habitName}`,
+    });
+  }
+
+  async scheduleTaskDueReminder(
+    taskTitle: string,
+    dueDate: Date,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.TaskReminder) return false;
+
+    if (this.isInQuietHours(dueDate)) return false;
+
+    return this.provider.send(`📋 Task Due Reminder`, {
+      body: `Your task "${taskTitle}" is due today. Organize your time with Istiqamaah.`,
+      tag: `task-${taskTitle}`,
+    });
+  }
+
+  async scheduleUpcomingTaskReminder(
+    taskTitle: string,
+    minutesUntil: number,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.TaskReminder) return false;
+
+    if (this.isInQuietHours()) return false;
+
+    return this.provider.send(`⏳ Upcoming Task`, {
+      body: `"${taskTitle}" starts in ${minutesUntil} minutes.`,
+      tag: `task-upcoming-${taskTitle}`,
+    });
+  }
+
+  async scheduleFocusReminder(
+    sessionTitle: string,
+    minutes: number,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.FocusReminder) return false;
+
+    if (this.isInQuietHours()) return false;
+
+    return this.provider.send(`⏱ Focus Session`, {
+      body: `Time for a ${minutes}-minute focus session on ${sessionTitle}.`,
+      tag: `focus-session-${sessionTitle}`,
+    });
+  }
+
+  async sendFocusCompleteNotification(
+    sessionTitle: string,
+    minutes: number,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.FocusReminder) return false;
+
+    return this.provider.send(`🎉 Focus Session Complete!`, {
+      body: `Alhamdulillah! You completed ${minutes} minutes on ${sessionTitle}. Take a break and prepare for prayer.`,
+      tag: `focus-complete-${sessionTitle}`,
     });
   }
 }
