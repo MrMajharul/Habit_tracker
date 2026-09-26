@@ -98,7 +98,12 @@ export async function getDashboardData(): Promise<DashboardData> {
     return {
       profile: {
         id: user.id,
-        name: profile?.name ?? user.email?.split("@")[0] ?? "Muslim",
+        name:
+          profile?.name ||
+          (user.user_metadata?.name as string) ||
+          (user.user_metadata?.full_name as string) ||
+          user.email?.split("@")[0] ||
+          "Muslim",
         email: user.email ?? "",
         country: profile?.country ?? undefined,
         city: profile?.city ?? undefined,

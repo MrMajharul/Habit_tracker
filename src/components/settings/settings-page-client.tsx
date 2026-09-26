@@ -28,34 +28,96 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useIsMounted } from "@/hooks/use-is-mounted";
+import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
+
+interface SettingsProfile {
+  name: string;
+  email: string;
+  city: string;
+  country: string;
+  timezone: string;
+}
+
+interface SettingsNotifications {
+  fajr: boolean;
+  dhuhr: boolean;
+  asr: boolean;
+  maghrib: boolean;
+  isha: boolean;
+  quranReminder: boolean;
+  habitReminders: boolean;
+  dailyReview: boolean;
+  quietHours: boolean;
+}
 
 export function SettingsPageClient() {
   const { theme, setTheme } = useTheme();
   const mounted = useIsMounted();
 
   // Profile state
-  const [profile, setProfile] = React.useState({
-    name: "Ahmad Ibn Abdullah",
-    email: "ahmad@example.com",
-    city: "Dhaka",
-    country: "Bangladesh",
-    timezone: "Asia/Dhaka",
+  const [profile, setProfile] = React.useState<SettingsProfile>(() => {
+    const fallback: SettingsProfile = {
+      name: "Muslim",
+      email: "",
+      city: "Dhaka",
+      country: "Bangladesh",
+      timezone: "Asia/Dhaka",
+    };
+    if (typeof window === "undefined") return fallback;
+    try {
+      const localSaved =
+        localStorage.getItem("istiqamaah_local_profile") ??
+        localStorage.getItem("noorpath_local_profile");
+      if (localSaved) {
+        return { ...fallback, ...JSON.parse(localSaved) };
+      }
+    } catch {
+      // Ignore
+    }
+    return fallback;
   });
+  const [savingProfile, setSavingProfile] = React.useState(false);
 
   // Language state
-  const [language, setLanguage] = React.useState<"en" | "bn">("en");
+  const [language, setLanguage] = React.useState<"en" | "bn">(() => {
+    if (typeof window === "undefined") return "en";
+    try {
+      const savedLang =
+        localStorage.getItem("istiqamaah_lang") ??
+        localStorage.getItem("noorpath_lang");
+      if (savedLang === "en" || savedLang === "bn") return savedLang;
+    } catch {
+      // Ignore
+    }
+    return "en";
+  });
 
   // Notifications state
-  const [notifications, setNotifications] = React.useState({
-    fajr: true,
-    dhuhr: true,
-    asr: true,
-    maghrib: true,
-    isha: true,
-    quranReminder: true,
-    habitReminders: true,
-    dailyReview: false,
-    quietHours: true,
+  const [notifications, setNotifications] = React.useState<SettingsNotifications>(() => {
+    const fallback: SettingsNotifications = {
+      fajr: true,
+      dhuhr: true,
+      asr: true,
+      maghrib: true,
+      isha: true,
+      quranReminder: true,
+      habitReminders: true,
+      dailyReview: false,
+      quietHours: true,
+    };
+    if (typeof window === "undefined") return fallback;
+    try {
+      const savedNotifs =
+        localStorage.getItem("istiqamaah_notifs") ??
+        localStorage.getItem("noorpath_notifs");
+      if (savedNotifs) {
+        return { ...fallback, ...JSON.parse(savedNotifs) };
+      }
+    } catch {
+      // Ignore
+    }
+    return fallback;
   });
 
   // Prayer settings state
@@ -71,27 +133,55 @@ export function SettingsPageClient() {
   });
 
   React.useEffect(() => {
-    // Load persisted preferences from localStorage if present
-    try {
-      const savedLang =
-        localStorage.getItem("istiqamaah_lang") ??
-        localStorage.getItem("noorpath_lang");
-      const savedNotifs =
-        localStorage.getItem("istiqamaah_notifs") ??
-        localStorage.getItem("noorpath_notifs");
-      if (savedLang === "en" || savedLang === "bn" || savedNotifs) {
-        setTimeout(() => {
-          if (savedLang === "en" || savedLang === "bn") {
-            setLanguage(savedLang);
-          }
-          if (savedNotifs) {
-            setNotifications(JSON.parse(savedNotifs));
-          }
-        }, 0);
+    let active = true;
+
+    // Fetch user profile from Supabase
+    async function loadUserProfile() {
+      if (!isSupabaseConfigured || isDevAuthBypass) {
+        return;
       }
-    } catch {
-      // Ignore storage errors
+
+      try {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user && active) {
+          const { data: dbProfile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          if (!active) return;
+
+          const userName =
+            dbProfile?.name ||
+            (user.user_metadata?.name as string) ||
+            (user.user_metadata?.full_name as string) ||
+            user.email?.split("@")[0] ||
+            "Muslim";
+
+          setProfile((prev) => ({
+            ...prev,
+            name: userName,
+            email: user.email || dbProfile?.email || prev.email,
+            city: dbProfile?.city || prev.city,
+            country: dbProfile?.country || prev.country,
+            timezone: dbProfile?.timezone || prev.timezone,
+          }));
+        }
+      } catch (err) {
+        console.warn("Failed to load user profile in settings:", err);
+      }
     }
+
+    void loadUserProfile();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleLanguageChange = (lang: "en" | "bn") => {
@@ -119,6 +209,53 @@ export function SettingsPageClient() {
         ? "Notification enabled"
         : "Notification disabled",
     );
+  };
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      try {
+        localStorage.setItem(
+          "istiqamaah_local_profile",
+          JSON.stringify({
+            name: profile.name.trim(),
+            city: profile.city,
+            country: profile.country,
+            timezone: profile.timezone,
+          }),
+        );
+      } catch {
+        // Ignore storage errors
+      }
+
+      if (isSupabaseConfigured && !isDevAuthBypass) {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          await supabase.from("profiles").upsert({
+            id: user.id,
+            name: profile.name.trim(),
+            city: profile.city,
+            country: profile.country,
+            timezone: profile.timezone,
+            updated_at: new Date().toISOString(),
+          });
+
+          await supabase.auth.updateUser({
+            data: { name: profile.name.trim() },
+          });
+        }
+      }
+      toast.success("Profile saved successfully");
+    } catch (err) {
+      console.warn("Failed to save profile:", err);
+      toast.error("Failed to save profile");
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleExportData = () => {
@@ -200,8 +337,8 @@ export function SettingsPageClient() {
                 <User className="size-5" />
               </div>
               <div>
-                <CardTitle className="text-base">{profile.name}</CardTitle>
-                <CardDescription>{profile.email}</CardDescription>
+                <CardTitle className="text-base">{profile.name || "My Account"}</CardTitle>
+                <CardDescription>{profile.email || "Signed in"}</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -212,6 +349,7 @@ export function SettingsPageClient() {
                 <Input
                   id="prof-name"
                   value={profile.name}
+                  placeholder="Enter your name"
                   onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                 />
               </div>
@@ -221,6 +359,7 @@ export function SettingsPageClient() {
                   id="prof-email"
                   type="email"
                   value={profile.email}
+                  placeholder="your.email@example.com"
                   disabled
                   className="bg-muted/50"
                 />
@@ -234,9 +373,10 @@ export function SettingsPageClient() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => toast.success("Profile saved")}
+                disabled={savingProfile}
+                onClick={handleSaveProfile}
               >
-                Save
+                {savingProfile ? "Saving..." : "Save"}
               </Button>
             </div>
           </CardContent>
