@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -23,7 +23,9 @@ export default function OnboardingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button render={<Link href="/dashboard" />}>Continue to dashboard</Button>
+          <Link href="/dashboard" className={buttonVariants()}>
+            Continue to dashboard
+          </Link>
         </CardContent>
       </Card>
     </div>

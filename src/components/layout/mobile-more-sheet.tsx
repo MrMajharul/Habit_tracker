@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -58,17 +58,18 @@ export function MobileMoreSheet() {
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
             return (
-              <Button
+              <Link
                 key={item.href}
-                variant={isActive ? "secondary" : "outline"}
-                className="h-auto justify-start gap-3 px-4 py-3"
-                render={
-                  <Link href={item.href} onClick={() => setOpen(false)} />
-                }
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  buttonVariants({ variant: isActive ? "secondary" : "outline" }),
+                  "h-auto justify-start gap-3 px-4 py-3",
+                )}
               >
                 <Icon className="size-4 shrink-0" />
                 <span className="text-left text-sm">{item.title}</span>
-              </Button>
+              </Link>
             );
           })}
         </div>
