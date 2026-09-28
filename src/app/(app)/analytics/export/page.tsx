@@ -1,14 +1,14 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 
-import { AnalyticsPageClient } from "@/components/analytics/analytics-page-client";
+import { AnalyticsExportClient } from "@/components/analytics/analytics-export-client";
 
 export const metadata: Metadata = {
-  title: "Analytics — Istiqamah",
-  description: "Private personal progress and insights across your Deen and life.",
+  title: "Export Analytics — Istiqamah",
+  description: "Export your personal progress, prayer logs, habits, and focus sessions.",
 };
 
-export default function AnalyticsPage() {
+export default function AnalyticsExportPage() {
   return (
     <Suspense
       fallback={
@@ -17,7 +17,7 @@ export default function AnalyticsPage() {
         </div>
       }
     >
-      <AnalyticsPageClient />
+      <AnalyticsExportClient />
     </Suspense>
   );
 }

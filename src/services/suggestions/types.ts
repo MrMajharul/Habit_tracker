@@ -4,7 +4,9 @@ export type SuggestionCategory =
   | "study"
   | "habit"
   | "reflection"
-  | "quran";
+  | "quran"
+  | "dhikr"
+  | "ramadan";
 
 export type SuggestionType =
   | "DEFAULT"
@@ -19,7 +21,13 @@ export type SuggestionType =
   | "QURAN_TARGET"
   | "QURAN_CONTINUE"
   | "POST_FAJR_QURAN"
-  | "POST_MAGHRIB_QURAN";
+  | "POST_MAGHRIB_QURAN"
+  | "DHIKR_RECOMMENDATION"
+  | "MORNING_ADHKAR"
+  | "EVENING_ADHKAR"
+  | "POST_SALAH_DHIKR"
+  | "DHIKR_REMINDER"
+  | "RAMADAN_SUGGESTION";
 
 export interface SuggestionItem {
   id: string;
@@ -42,7 +50,7 @@ export interface SmartSuggestion {
   remainingMinutes?: number;
   items: SuggestionItem[];
   reflectionPrompt?: string;
-  planLayer?: "spiritual" | "personal" | "productivity" | "integrated";
+  planLayer?: "spiritual" | "personal" | "productivity" | "integrated" | "dhikr" | "ramadan";
 }
 
 export interface SuggestionContext {
@@ -79,6 +87,12 @@ export interface SuggestionContext {
   quranTargetValue?: number;
   quranLastSurah?: string;
   quranLastAyah?: number;
+  // Phase 5: Dhikr & Ramadan context
+  morningAdhkarCompleted?: boolean;
+  eveningAdhkarCompleted?: boolean;
+  lastCompletedPrayer?: string;
+  isRamadan?: boolean;
+  ramadanDay?: number;
 }
 
 export interface SuggestionEngine {

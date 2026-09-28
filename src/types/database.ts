@@ -494,6 +494,162 @@ type SpiritualGoalInsert = {
   updated_at?: string;
 };
 
+// ─── Phase 5: Dhikr Sessions ─────────────────────────────────────────────────
+
+type DhikrSessionRow = {
+  id: string;
+  user_id: string;
+  dhikr_id: string;
+  target_count: number;
+  completed_count: number;
+  started_at: string;
+  completed_at: string | null;
+  status: "COMPLETED" | "INTERRUPTED" | "CANCELLED";
+  created_at: string;
+};
+
+type DhikrSessionInsert = {
+  id?: string;
+  user_id: string;
+  dhikr_id: string;
+  target_count: number;
+  completed_count?: number;
+  started_at?: string;
+  completed_at?: string | null;
+  status?: "COMPLETED" | "INTERRUPTED" | "CANCELLED";
+  created_at?: string;
+};
+
+// ─── Phase 5: Dhikr Favorites ────────────────────────────────────────────────
+
+type DhikrFavoriteRow = {
+  id: string;
+  user_id: string;
+  dhikr_id: string;
+  created_at: string;
+};
+
+type DhikrFavoriteInsert = {
+  id?: string;
+  user_id: string;
+  dhikr_id: string;
+  created_at?: string;
+};
+
+// ─── Phase 5: Ramadan Settings ───────────────────────────────────────────────
+
+type RamadanSettingsRow = {
+  id: string;
+  user_id: string;
+  is_enabled: boolean;
+  suhoor_reminder: boolean;
+  iftar_reminder: boolean;
+  daily_quran_target: number;
+  dhikr_reminder: boolean;
+  reflection_reminder: boolean;
+  taraweeh_tracking: boolean;
+  custom_checklist_items: Json;
+  created_at: string;
+  updated_at: string;
+};
+
+type RamadanSettingsInsert = {
+  id?: string;
+  user_id: string;
+  is_enabled?: boolean;
+  suhoor_reminder?: boolean;
+  iftar_reminder?: boolean;
+  daily_quran_target?: number;
+  dhikr_reminder?: boolean;
+  reflection_reminder?: boolean;
+  taraweeh_tracking?: boolean;
+  custom_checklist_items?: Json;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Phase 5: Ramadan Daily Logs ─────────────────────────────────────────────
+
+type RamadanDailyLogRow = {
+  id: string;
+  user_id: string;
+  hijri_date: string;
+  ramadan_day: number;
+  fajr_completed: boolean;
+  quran_completed: boolean;
+  morning_adhkar_completed: boolean;
+  dhikr_completed: boolean;
+  dhuhr_completed: boolean;
+  asr_completed: boolean;
+  iftar_completed: boolean;
+  maghrib_completed: boolean;
+  evening_adhkar_completed: boolean;
+  isha_completed: boolean;
+  taraweeh_completed: boolean;
+  reflection_completed: boolean;
+  custom_items: Json;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type RamadanDailyLogInsert = {
+  id?: string;
+  user_id: string;
+  hijri_date: string;
+  ramadan_day: number;
+  fajr_completed?: boolean;
+  quran_completed?: boolean;
+  morning_adhkar_completed?: boolean;
+  dhikr_completed?: boolean;
+  dhuhr_completed?: boolean;
+  asr_completed?: boolean;
+  iftar_completed?: boolean;
+  maghrib_completed?: boolean;
+  evening_adhkar_completed?: boolean;
+  isha_completed?: boolean;
+  taraweeh_completed?: boolean;
+  reflection_completed?: boolean;
+  custom_items?: Json;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Phase 5: Ramadan Goals ──────────────────────────────────────────────────
+
+type RamadanGoalRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  goal_type: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+  start_date: string;
+  target_date: string | null;
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type RamadanGoalInsert = {
+  id?: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  goal_type?: string;
+  target_value?: number;
+  current_value?: number;
+  unit?: string;
+  start_date?: string;
+  target_date?: string | null;
+  is_completed?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 export type Database = {
@@ -599,6 +755,37 @@ export type Database = {
         Row: SpiritualGoalRow;
         Insert: SpiritualGoalInsert;
         Update: Partial<SpiritualGoalInsert>;
+        Relationships: [];
+      };
+      // ─── Phase 5 Tables ─────────────────────────────────────────────────
+      dhikr_sessions: {
+        Row: DhikrSessionRow;
+        Insert: DhikrSessionInsert;
+        Update: Partial<DhikrSessionInsert>;
+        Relationships: [];
+      };
+      dhikr_favorites: {
+        Row: DhikrFavoriteRow;
+        Insert: DhikrFavoriteInsert;
+        Update: Partial<DhikrFavoriteInsert>;
+        Relationships: [];
+      };
+      ramadan_settings: {
+        Row: RamadanSettingsRow;
+        Insert: RamadanSettingsInsert;
+        Update: Partial<RamadanSettingsInsert>;
+        Relationships: [];
+      };
+      ramadan_daily_logs: {
+        Row: RamadanDailyLogRow;
+        Insert: RamadanDailyLogInsert;
+        Update: Partial<RamadanDailyLogInsert>;
+        Relationships: [];
+      };
+      ramadan_goals: {
+        Row: RamadanGoalRow;
+        Insert: RamadanGoalInsert;
+        Update: Partial<RamadanGoalInsert>;
         Relationships: [];
       };
     };

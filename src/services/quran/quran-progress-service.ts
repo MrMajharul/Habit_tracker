@@ -32,14 +32,18 @@ function getMonthStartStr(now = new Date()): string {
   return format(startOfMonth(now), "yyyy-MM-dd");
 }
 
-function countAyahs(session: QuranReadingSession): number {
+function countAyahs(session: Pick<QuranReadingSession, "startAyah" | "endAyah">): number {
   return Math.max(0, session.endAyah - session.startAyah + 1);
 }
 
 // ─── Daily Progress ─────────────────────────────────────────────────────────
 
-export function getDailyProgress(date?: string): QuranDailyProgress {
-  const d = date ?? todayStr();
+export function countAyahsInSession(session: Pick<QuranReadingSession, "startAyah" | "endAyah">): number {
+  return countAyahs(session);
+}
+
+export function getDailyProgress(date?: string, now = new Date()): QuranDailyProgress {
+  const d = date ?? todayStr(now);
   const sessions = quranService.getSessionsByDate(d);
   const goalSettings = quranGoalService.getGoalSettings();
 
@@ -65,9 +69,9 @@ export function getDailyProgress(date?: string): QuranDailyProgress {
 
 // ─── Weekly Progress ────────────────────────────────────────────────────────
 
-export function getWeeklyProgress(): QuranWeeklyProgress {
-  const start = getWeekStartStr();
-  const end = todayStr();
+export function getWeeklyProgress(now = new Date()): QuranWeeklyProgress {
+  const start = getWeekStartStr(now);
+  const end = todayStr(now);
   const sessions = quranService.getSessionsInRange(start, end);
 
   const uniqueDays = new Set(sessions.map((s) => s.readingDate));
@@ -82,7 +86,7 @@ export function getWeeklyProgress(): QuranWeeklyProgress {
 
 // ─── Streak Calculation ─────────────────────────────────────────────────────
 
-export function getStreakInfo(): QuranStreakInfo {
+export function getStreakInfo(now = new Date()): QuranStreakInfo {
   const allSessions = quranService.getReadingSessions();
   if (allSessions.length === 0) {
     return { currentStreak: 0, longestStreak: 0, daysReadThisWeek: 0, daysReadThisMonth: 0 };
@@ -90,7 +94,7 @@ export function getStreakInfo(): QuranStreakInfo {
 
   // Unique reading dates, sorted descending
   const uniqueDates = [...new Set(allSessions.map((s) => s.readingDate))]
-    .filter((d) => d <= todayStr()) // Never count future dates
+    .filter((d) => d <= todayStr(now)) // Never count future dates
     .sort((a, b) => b.localeCompare(a));
 
   if (uniqueDates.length === 0) {
@@ -99,7 +103,7 @@ export function getStreakInfo(): QuranStreakInfo {
 
   // Current streak: consecutive days ending today or yesterday
   let currentStreak = 0;
-  const today = startOfDay(new Date());
+  const today = startOfDay(now);
 
   // Check if the most recent reading was today or yesterday
   const lastRead = startOfDay(parseISO(uniqueDates[0]));
@@ -139,8 +143,8 @@ export function getStreakInfo(): QuranStreakInfo {
   longestStreak = Math.max(longestStreak, tempStreak);
 
   // Days read this week/month
-  const weekStart = getWeekStartStr();
-  const monthStart = getMonthStartStr();
+  const weekStart = getWeekStartStr(now);
+  const monthStart = getMonthStartStr(now);
   const daysReadThisWeek = uniqueDates.filter((d) => d >= weekStart).length;
   const daysReadThisMonth = uniqueDates.filter((d) => d >= monthStart).length;
 
@@ -149,7 +153,7 @@ export function getStreakInfo(): QuranStreakInfo {
 
 // ─── Full Summary ───────────────────────────────────────────────────────────
 
-export function getProgressSummary(): QuranProgressSummary {
+export function getProgressSummary(now = new Date()): QuranProgressSummary {
   const allSessions = quranService.getReadingSessions();
   const position = quranService.getReadingPosition();
 
@@ -161,9 +165,9 @@ export function getProgressSummary(): QuranProgressSummary {
     : undefined;
 
   return {
-    daily: getDailyProgress(),
-    weekly: getWeeklyProgress(),
-    streak: getStreakInfo(),
+    daily: getDailyProgress(undefined, now),
+    weekly: getWeeklyProgress(now),
+    streak: getStreakInfo(now),
     totalSessions: allSessions.length,
     totalMinutes: allSessions.reduce((sum, s) => sum + s.minutesRead, 0),
     totalAyahsRead: allSessions.reduce((sum, s) => sum + countAyahs(s), 0),

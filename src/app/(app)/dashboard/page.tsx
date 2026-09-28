@@ -9,6 +9,7 @@ import { QuranDashboardCard } from "@/components/dashboard/quran-dashboard-card"
 import { SmartSuggestionsCard } from "@/components/dashboard/smart-suggestions-card";
 import { TodaysHabits } from "@/components/dashboard/todays-habits";
 import { TodaysTasks } from "@/components/dashboard/todays-tasks";
+import { YourProgressCard } from "@/components/dashboard/your-progress-card";
 import { getDashboardData } from "@/services/dashboard/dashboard-service";
 import { hadithService } from "@/services/hadith/hadith-service";
 import { getPrayerDaySummary } from "@/services/prayer";
@@ -60,6 +61,8 @@ async function DashboardContent() {
       </div>
 
       <ProgressOverview progress={dashboard.progress} />
+
+      <YourProgressCard />
 
       <QuranDashboardCard />
 

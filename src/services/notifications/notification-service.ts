@@ -6,7 +6,9 @@ export type NotificationType =
   | "FocusReminder"
   | "DailyReflection"
   | "HadithReminder"
-  | "QuranReminder";
+  | "QuranReminder"
+  | "DhikrReminder"
+  | "RamadanReminder";
 
 export type NotificationPermissionState =
   | "default"
@@ -36,6 +38,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     DailyReflection: true,
     HadithReminder: true,
     QuranReminder: true,
+    DhikrReminder: true,
+    RamadanReminder: true,
   },
 };
 
@@ -274,6 +278,64 @@ export class NotificationService {
     return this.provider.send(`Qur'an Goal Reminder`, {
       body: `Your goal "${goalTitle}" is progressing. Continue your reading today.`,
       tag: `quran-goal-${goalTitle}`,
+    });
+  }
+
+  // ─── Phase 5: Dhikr Reminders ─────────────────────────────────────────────
+
+  async scheduleMorningAdhkarReminder(): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.DhikrReminder) return false;
+    if (this.isInQuietHours()) return false;
+
+    return this.provider.send(`Morning Adhkar`, {
+      body: "Your morning adhkar are ready. Take a moment for remembrance.",
+      tag: "morning-adhkar-reminder",
+    });
+  }
+
+  async scheduleEveningAdhkarReminder(): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.DhikrReminder) return false;
+    if (this.isInQuietHours()) return false;
+
+    return this.provider.send(`Evening Adhkar`, {
+      body: "Take a few minutes for your evening adhkar.",
+      tag: "evening-adhkar-reminder",
+    });
+  }
+
+  async schedulePostSalahDhikrReminder(
+    prayerName: string,
+  ): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.DhikrReminder) return false;
+    if (this.isInQuietHours()) return false;
+
+    return this.provider.send(`Post-Salah Dhikr`, {
+      body: `Take a moment for post-${prayerName} dhikr.`,
+      tag: `post-salah-dhikr-${prayerName}`,
+    });
+  }
+
+  async scheduleSuhoorReminder(): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.RamadanReminder) return false;
+    // Suhoor reminders should not be blocked by quiet hours
+
+    return this.provider.send(`Suhoor Reminder`, {
+      body: "Time to prepare for Suhoor. May your fast be blessed.",
+      tag: "suhoor-reminder",
+    });
+  }
+
+  async scheduleIftarReminder(): Promise<boolean> {
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.RamadanReminder) return false;
+
+    return this.provider.send(`Iftar Time`, {
+      body: "It's time to break your fast. Bismillah.",
+      tag: "iftar-reminder",
     });
   }
 }

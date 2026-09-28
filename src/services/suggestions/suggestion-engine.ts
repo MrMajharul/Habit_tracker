@@ -79,12 +79,12 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           {
             id: "sleep-adhkar",
             icon: "sparkles",
-            category: "worship",
-            title: "Bedtime Adhkar & Tasbeeh",
+            category: "dhikr",
+            title: "Take a quiet moment for remembrance before sleep",
             durationMinutes: 5,
             actionUrl: "/dhikr",
             actionLabel: "Dhikr",
-            type: "POST_PRAYER_TASK",
+            type: "DHIKR_REMINDER",
           },
         ],
         reflectionPrompt:
@@ -107,6 +107,29 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
             ? fajrHabit.name
             : "Qur'an Recitation after Fajr";
 
+      // Phase 5: Morning adhkar suggestion
+      const morningAdhkarItem: SuggestionItem = context.morningAdhkarCompleted
+        ? {
+            id: "morning-adhkar-done",
+            icon: "check-circle",
+            category: "dhikr",
+            title: "Morning Adhkar ✓",
+            durationMinutes: 0,
+            actionUrl: "/dhikr",
+            actionLabel: "View",
+            type: "MORNING_ADHKAR",
+          }
+        : {
+            id: "morning-adhkar",
+            icon: "sparkles",
+            category: "dhikr",
+            title: "Your morning adhkar are ready",
+            durationMinutes: 10,
+            actionUrl: "/dhikr",
+            actionLabel: "Begin Adhkar",
+            type: "MORNING_ADHKAR",
+          };
+
       const items: SuggestionItem[] = [
         {
           id: "morning-quran",
@@ -118,16 +141,7 @@ export class RuleBasedSuggestionEngine implements SuggestionEngine {
           actionLabel: "Recite",
           type: "POST_FAJR_QURAN",
         },
-        {
-          id: "morning-adhkar",
-          icon: "sparkles",
-          category: "worship",
-          title: "Morning Adhkar",
-          durationMinutes: 10,
-          actionUrl: "/dhikr",
-          actionLabel: "Adhkar",
-          type: "POST_PRAYER_TASK",
-        },
+        morningAdhkarItem,
         {
           id: "plan-day",
           icon: "graduation-cap",

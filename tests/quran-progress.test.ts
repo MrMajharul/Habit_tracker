@@ -113,12 +113,15 @@ describe("Qur'an Progress & Streaks", () => {
 
   describe("Weekly Progress", () => {
     it("should calculate weekly progress", () => {
-      // Create sessions on different days this week
-      const today = new Date();
-      const todayStr = format(today, "yyyy-MM-dd");
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = format(yesterday, "yyyy-MM-dd");
+      // Pin to Wednesday Sep 24 2026, 12:00 — mid-week so "yesterday"
+      // (Tuesday Sep 23) is guaranteed to be in the same ISO week.
+      const fixedWednesday = new Date(2026, 8, 24, 12, 0, 0);
+      vi.useFakeTimers({ now: fixedWednesday });
+
+      const todayStr = format(fixedWednesday, "yyyy-MM-dd");          // "2026-09-24"
+      const yesterdayDate = new Date(fixedWednesday);
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterdayStr = format(yesterdayDate, "yyyy-MM-dd");        // "2026-09-23"
 
       quranService.createReadingSession({
         userId: "u",
@@ -140,6 +143,8 @@ describe("Qur'an Progress & Streaks", () => {
       const weekly = quranProgressService.getWeeklyProgress();
       expect(weekly.minutesRead).toBeGreaterThanOrEqual(30);
       expect(weekly.daysRead).toBeGreaterThanOrEqual(2);
+
+      vi.useRealTimers();
     });
   });
 

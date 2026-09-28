@@ -18,7 +18,14 @@ export type OfflineActionType =
   | "update_quran_goal"
   | "create_quran_bookmark"
   | "delete_quran_bookmark"
-  | "update_quran_reading_position";
+  | "update_quran_reading_position"
+  // Phase 5: Dhikr & Ramadan
+  | "create_dhikr_session"
+  | "create_dhikr_favorite"
+  | "delete_dhikr_favorite"
+  | "save_ramadan_settings"
+  | "save_ramadan_daily_log"
+  | "save_ramadan_goal";
 
 export interface OfflineAction {
   id: string;
@@ -303,6 +310,48 @@ export async function flushOfflineQueue(): Promise<{
       } else if (item.type === "update_quran_reading_position") {
         // Reading position is stored as part of user preferences / last session
         // The position is synced through the latest reading session
+        successCount++;
+      }
+      // ─── Phase 5: Dhikr & Ramadan ────────────────────────────────────
+      else if (item.type === "create_dhikr_session") {
+        await supabase.from("dhikr_sessions").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "create_dhikr_favorite") {
+        await supabase.from("dhikr_favorites").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "delete_dhikr_favorite") {
+        await supabase
+          .from("dhikr_favorites")
+          .delete()
+          .eq("dhikr_id", item.payload.dhikr_id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "save_ramadan_settings") {
+        await supabase.from("ramadan_settings").upsert({
+          ...item.payload,
+          user_id: user.id,
+          updated_at: new Date().toISOString(),
+        });
+        successCount++;
+      } else if (item.type === "save_ramadan_daily_log") {
+        await supabase.from("ramadan_daily_logs").upsert({
+          ...item.payload,
+          user_id: user.id,
+          updated_at: new Date().toISOString(),
+        });
+        successCount++;
+      } else if (item.type === "save_ramadan_goal") {
+        await supabase.from("ramadan_goals").upsert({
+          ...item.payload,
+          user_id: user.id,
+          updated_at: new Date().toISOString(),
+        });
         successCount++;
       }
     } catch (err) {
