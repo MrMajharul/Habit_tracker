@@ -38,6 +38,8 @@ export function LoginForm() {
   });
 
   const configError = searchParams.get("error") === "supabase_not_configured";
+  const callbackError = searchParams.get("error") === "auth_callback_failed";
+  const errorDescription = searchParams.get("error_description");
 
   const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
@@ -83,16 +85,33 @@ export function LoginForm() {
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
 
-    if (error) {
-      toast.error("Google sign-in failed", { description: error.message });
+      if (error) {
+        if (
+          error.message?.toLowerCase().includes("unsupported provider") ||
+          error.message?.toLowerCase().includes("not enabled")
+        ) {
+          toast.error("Google sign-in is not enabled in Supabase", {
+            description:
+              "Please enable Google provider in Supabase Dashboard (Authentication > Providers > Google).",
+            duration: 8000,
+          });
+        } else {
+          toast.error("Google sign-in failed", { description: error.message });
+        }
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Unexpected error during Google sign-in";
+      toast.error("Google sign-in error", { description: message });
     }
   };
 
@@ -110,6 +129,15 @@ export function LoginForm() {
             Supabase is not configured. Set environment variables or enable{" "}
             <code className="text-xs">NEXT_PUBLIC_DEV_AUTH_BYPASS=true</code> for
             local UI development.
+          </p>
+        ) : null}
+
+        {callbackError ? (
+          <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            Google authentication failed.{" "}
+            {errorDescription
+              ? decodeURIComponent(errorDescription)
+              : "Please verify that the Google provider is enabled in your Supabase dashboard."}
           </p>
         ) : null}
 
