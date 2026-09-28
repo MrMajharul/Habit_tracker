@@ -1,4 +1,4 @@
--- Istiqamah initial schema
+-- Istiqamaah initial schema
 -- Run via Supabase SQL editor or CLI
 
 create extension if not exists "pgcrypto";

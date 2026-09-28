@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { AnalyticsPageClient } from "@/components/analytics/analytics-page-client";
 
 export const metadata: Metadata = {
-  title: "Analytics — Istiqamah",
+  title: "Analytics — Istiqamaah",
   description: "Private personal progress and insights across your Deen and life.",
 };
 

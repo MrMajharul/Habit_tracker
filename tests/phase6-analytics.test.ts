@@ -299,14 +299,14 @@ describe("Phase 6 — Advanced Export System", () => {
   const range = resolveAnalyticsPeriod({ preset: "this_week", timezone: "UTC", now: fixedNow });
   const summary = aggregateAnalytics(snapshot, range);
 
-  it("exports valid structured JSON with Istiqamah branding and metadata", () => {
+  it("exports valid structured JSON with Istiqamaah branding and metadata", () => {
     const { filename, body, document } = buildJsonExport(snapshot, summary, {
       categories: ["prayer", "habits", "focus", "quran"],
       range,
     });
 
     expect(filename).toBe(exportFileName("analytics", "2026-09-24", "json"));
-    expect(["Istiqamaah", "Istiqamah"]).toContain(document.metadata.product);
+    expect(document.metadata.product).toBe("Istiqamaah");
     expect(document.metadata.tagline).toBe("Balance your Deen. Organize your life.");
     expect(document.metadata.privacyNotice).toContain("private activity data");
 
@@ -342,7 +342,7 @@ describe("Phase 6 — Advanced Export System", () => {
 
   it("builds clean PDF report binary with correct PDF specification structure", () => {
     const { filename, body } = buildPdfReport(summary);
-    expect(filename).toMatch(/^(istiqamaah|istiqamah)-weekly-report-2026-09-24\.pdf$/);
+    expect(filename).toBe("istiqamaah-weekly-report-2026-09-24.pdf");
     expect(body).toBeInstanceOf(Uint8Array);
 
     const pdfString = new TextDecoder().decode(body);

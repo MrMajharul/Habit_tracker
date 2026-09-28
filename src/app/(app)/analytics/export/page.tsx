@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { AnalyticsExportClient } from "@/components/analytics/analytics-export-client";
 
 export const metadata: Metadata = {
-  title: "Export Analytics — Istiqamah",
+  title: "Export Analytics — Istiqamaah",
   description: "Export your personal progress, prayer logs, habits, and focus sessions.",
 };
 
