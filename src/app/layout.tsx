@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { AppProviders } from "@/components/providers/app-providers";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
@@ -66,6 +67,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}
       >
         <AppProviders>{children}</AppProviders>
+        <SpeedInsights />
       </body>
     </html>
   );
