@@ -347,7 +347,7 @@ describe("Phase 6 — Advanced Export System", () => {
 
     const pdfString = new TextDecoder().decode(body);
     expect(pdfString.startsWith("%PDF-1.4")).toBe(true);
-    expect(pdfString).toMatch(/ISTIQAMA+H/);
+    expect(pdfString).toMatch(/ISTIQAMAA+H/);
     expect(pdfString).toContain("%%EOF");
   });
 });
