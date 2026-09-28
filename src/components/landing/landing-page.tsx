@@ -783,7 +783,7 @@ function CTASection() {
           إِسْتِقَامَة
         </p>
         <h2 className="text-4xl sm:text-5xl font-bold mb-5" style={{ color: "#f5f0e8" }}>
-          Your Istiqamah starts today
+          Your Istiqamaah starts today
         </h2>
         <p className="text-lg mb-10 mx-auto max-w-xl" style={{ color: "rgba(245,240,232,0.6)" }}>
           Join thousands of Muslims who build their days around what matters most.
@@ -833,19 +833,17 @@ function Footer() {
         </div>
 
         <div className="flex flex-wrap gap-x-8 gap-y-3 justify-center md:justify-end text-sm" style={{ color: "rgba(245,240,232,0.45)" }}>
-          {["Features", "Philosophy", "Pricing", "Login", "Register"].map((item) => (
-            <Link
-              key={item}
-              href={item === "Login" ? "/login" : item === "Register" ? "/register" : `#${item.toLowerCase()}`}
-              className="hover:text-white transition-colors"
-            >
-              {item}
-            </Link>
-          ))}
+          <a href="#features" className="hover:text-white transition-colors">Features</a>
+          <a href="#philosophy" className="hover:text-white transition-colors">Philosophy</a>
+          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+          <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-white transition-colors">Terms of Use</Link>
+          <Link href="/login" className="hover:text-white transition-colors">Sign In</Link>
+          <Link href="/register" className="hover:text-white transition-colors">Register</Link>
         </div>
       </div>
       <div className="mt-8 text-center text-xs" style={{ color: "rgba(245,240,232,0.2)" }}>
-        © {new Date().getFullYear()} Istiqamaah. Built with sincerity.
+        © {new Date().getFullYear()} Istiqamaah. Balance your Deen. Organize your life. Built with sincerity.
       </div>
     </footer>
   );

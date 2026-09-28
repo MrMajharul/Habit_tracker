@@ -1,15 +1,34 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { AppLogo } from "@/components/ui/app-logo";
+import { isSupabaseConfigured } from "@/lib/constants";
+import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/features/navigation/nav-items";
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      clearOfflineQueue();
+      if (isSupabaseConfigured) {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      }
+      router.push("/login");
+      router.refresh();
+    } catch {
+      router.push("/login");
+    }
+  };
 
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar">
@@ -44,9 +63,19 @@ export function AppSidebar() {
         })}
       </nav>
 
-      <div className="flex items-center justify-between border-t border-sidebar-border p-4">
-        <p className="text-xs text-muted-foreground">Appearance</p>
-        <ThemeToggle />
+      <div className="border-t border-sidebar-border p-3 space-y-2">
+        <div className="flex items-center justify-between px-2">
+          <p className="text-xs text-muted-foreground">Appearance</p>
+          <ThemeToggle />
+        </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+        >
+          <LogOut className="size-3.5" />
+          Sign out
+        </button>
       </div>
     </aside>
   );

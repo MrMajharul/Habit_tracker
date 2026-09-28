@@ -164,12 +164,23 @@ export function LoginForm() {
           Google
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
-            Create one
-          </Link>
-        </p>
+        <div className="space-y-2 text-center text-xs text-muted-foreground">
+          <p>
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="font-medium text-primary hover:underline">
+              Create one
+            </Link>
+          </p>
+          <div className="flex items-center justify-center gap-3 text-[11px] text-muted-foreground/75">
+            <Link href="/privacy" className="hover:underline">
+              Privacy Policy
+            </Link>
+            <span>•</span>
+            <Link href="/terms" className="hover:underline">
+              Terms of Use
+            </Link>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

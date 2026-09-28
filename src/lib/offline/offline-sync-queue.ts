@@ -33,17 +33,25 @@ export interface OfflineAction {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: any;
   timestamp: number;
+  userId?: string;
 }
 
 const QUEUE_KEY = "istiqamaah_offline_sync_queue";
-const LEGACY_QUEUE_KEY = "noorpath_offline_sync_queue";
+const LEGACY_QUEUE_KEYS = [
+  "istiqamaah_offline_sync_queue",
+  "noorpath_offline_sync_queue",
+];
 
 export function getOfflineQueue(): OfflineAction[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw =
-      localStorage.getItem(QUEUE_KEY) ??
-      localStorage.getItem(LEGACY_QUEUE_KEY);
+    let raw = localStorage.getItem(QUEUE_KEY);
+    if (!raw) {
+      for (const legacyKey of LEGACY_QUEUE_KEYS) {
+        raw = localStorage.getItem(legacyKey);
+        if (raw) break;
+      }
+    }
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -56,6 +64,24 @@ export function saveOfflineQueue(queue: OfflineAction[]): void {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
   } catch {
     // Ignore storage quota
+  }
+}
+
+export function clearOfflineQueue(userId?: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!userId) {
+      localStorage.removeItem(QUEUE_KEY);
+      for (const legacyKey of LEGACY_QUEUE_KEYS) {
+        localStorage.removeItem(legacyKey);
+      }
+    } else {
+      const queue = getOfflineQueue();
+      const filtered = queue.filter((a) => a.userId !== userId);
+      saveOfflineQueue(filtered);
+    }
+  } catch {
+    // Ignore
   }
 }
 
@@ -133,6 +159,14 @@ export async function flushOfflineQueue(): Promise<{
   let failedCount = 0;
 
   for (const item of queue) {
+    // ACCOUNT ISOLATION GUARD:
+    // If the action was queued by a specific user and does not match the currently
+    // authenticated user, NEVER flush it into the current user's account.
+    if (item.userId && item.userId !== user.id) {
+      remaining.push(item);
+      continue;
+    }
+
     try {
       if (item.type === "LOG_HABIT") {
         const { habitId, date, completed, value } = item.payload;

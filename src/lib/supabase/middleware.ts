@@ -15,7 +15,13 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/login") ||
       request.nextUrl.pathname.startsWith("/register");
 
-    if (!isAuthRoute && !request.nextUrl.pathname.startsWith("/api")) {
+    const isPublicRoute =
+      isAuthRoute ||
+      request.nextUrl.pathname === "/" ||
+      request.nextUrl.pathname.startsWith("/privacy") ||
+      request.nextUrl.pathname.startsWith("/terms");
+
+    if (!isPublicRoute && !request.nextUrl.pathname.startsWith("/api")) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("error", "supabase_not_configured");
@@ -56,7 +62,13 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/onboarding");
 
-  if (!user && !isAuthRoute) {
+  const isPublicRoute =
+    isAuthRoute ||
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname.startsWith("/privacy") ||
+    request.nextUrl.pathname.startsWith("/terms");
+
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

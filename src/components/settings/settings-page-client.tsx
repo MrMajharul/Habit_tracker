@@ -4,8 +4,11 @@ import {
   Bell,
   Check,
   Download,
+  ExternalLink,
+  FileText,
   Globe,
   Laptop,
+  LogOut,
   Moon,
   RotateCcw,
   ShieldCheck,
@@ -13,16 +16,19 @@ import {
   Sun,
   User,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import * as React from "react";
 import { toast } from "sonner";
+import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
 
 import {
   PrayerSettingsDialog,
   type PrayerSettingsState,
 } from "@/components/prayer/prayer-settings-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { useIsMounted } from "@/hooks/use-is-mounted";
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface SettingsProfile {
   name: string;
@@ -255,6 +262,24 @@ export function SettingsPageClient() {
       toast.error("Failed to save profile");
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      clearOfflineQueue();
+      if (isSupabaseConfigured) {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      }
+      toast.success("Signed out successfully");
+      router.push("/login");
+      router.refresh();
+    } catch (err) {
+      console.warn("Sign out error:", err);
+      router.push("/login");
     }
   };
 
@@ -584,28 +609,69 @@ export function SettingsPageClient() {
       {/* Data & Privacy */}
       <section className="space-y-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Data & Privacy
+          Data &amp; Privacy
         </h2>
         <Card>
           <CardContent className="p-4 sm:p-6 space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-medium">Export Personal Worship & Study Data</p>
+                <p className="text-sm font-medium">Advanced Data Export</p>
                 <p className="text-xs text-muted-foreground">
-                  Download a JSON copy of all your tracked habits, prayers, and notes.
+                  Export complete CSV datasets, PDF weekly summaries, or structured JSON.
+                </p>
+              </div>
+              <Link
+                href="/analytics/export"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2")}
+              >
+                <ExternalLink className="size-4" />
+                Analytics Export
+              </Link>
+            </div>
+            <Separator />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium">Export Settings Backup (JSON)</p>
+                <p className="text-xs text-muted-foreground">
+                  Download a quick JSON snapshot of your profile, preferences, and prayer settings.
                 </p>
               </div>
               <Button size="sm" variant="outline" className="gap-2" onClick={handleExportData}>
                 <Download className="size-4" />
-                Export JSON
+                Export Settings
               </Button>
+            </div>
+            <Separator />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium">Privacy Policy &amp; Terms</p>
+                <p className="text-xs text-muted-foreground">
+                  Review our transparent data collection, RLS security, and Islamic source attribution.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/privacy"
+                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5 text-xs")}
+                >
+                  <FileText className="size-3.5" />
+                  Privacy Policy
+                </Link>
+                <Link
+                  href="/terms"
+                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1.5 text-xs")}
+                >
+                  <FileText className="size-3.5" />
+                  Terms of Use
+                </Link>
+              </div>
             </div>
             <Separator />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-destructive">Reset Local Storage</p>
                 <p className="text-xs text-muted-foreground">
-                  Clears local browser cache and resets preferences.
+                  Clears local browser cache and resets preferences to default.
                 </p>
               </div>
               <Button
@@ -616,6 +682,24 @@ export function SettingsPageClient() {
               >
                 <RotateCcw className="size-4" />
                 Reset Cache
+              </Button>
+            </div>
+            <Separator />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-destructive">Account Session</p>
+                <p className="text-xs text-muted-foreground">
+                  Safely sign out and clear your offline synchronization queue.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={handleSignOut}
+              >
+                <LogOut className="size-4" />
+                Sign Out
               </Button>
             </div>
           </CardContent>
@@ -634,8 +718,9 @@ export function SettingsPageClient() {
               <span>Built with Ihsan for the Ummah</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Istiqamaah is a calm Muslim daily-life companion. No advertisements, no distracting algorithms,
-              no public religious leaderboards. All Hadith and Qur&apos;anic texts are verified from source-controlled collections.
+              Istiqamaah is a calm Muslim daily-life companion. Balance your Deen. Organize your life.
+              No advertisements, no distracting algorithms, no public religious leaderboards.
+              All Hadith and Qur&apos;anic texts are verified from source-controlled collections.
             </p>
             <div className="flex flex-wrap gap-2 pt-2">
               <Badge variant="outline" className="text-[10px]">Version 0.1.0</Badge>

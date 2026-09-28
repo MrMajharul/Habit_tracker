@@ -145,12 +145,25 @@ export function RegisterForm() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:underline">
-            Sign in
-          </Link>
-        </p>
+        <div className="space-y-2 text-center text-xs text-muted-foreground">
+          <p>
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-primary hover:underline">
+              Sign in
+            </Link>
+          </p>
+          <p className="text-[11px] text-muted-foreground/80">
+            By signing up, you agree to our{" "}
+            <Link href="/terms" className="underline hover:text-foreground">
+              Terms of Use
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

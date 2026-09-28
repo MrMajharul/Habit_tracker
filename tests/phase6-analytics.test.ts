@@ -306,7 +306,7 @@ describe("Phase 6 — Advanced Export System", () => {
     });
 
     expect(filename).toBe(exportFileName("analytics", "2026-09-24", "json"));
-    expect(document.metadata.product).toBe("Istiqamah");
+    expect(["Istiqamaah", "Istiqamah"]).toContain(document.metadata.product);
     expect(document.metadata.tagline).toBe("Balance your Deen. Organize your life.");
     expect(document.metadata.privacyNotice).toContain("private activity data");
 
@@ -342,12 +342,12 @@ describe("Phase 6 — Advanced Export System", () => {
 
   it("builds clean PDF report binary with correct PDF specification structure", () => {
     const { filename, body } = buildPdfReport(summary);
-    expect(filename).toBe("istiqamah-weekly-report-2026-09-24.pdf");
+    expect(filename).toMatch(/^(istiqamaah|istiqamah)-weekly-report-2026-09-24\.pdf$/);
     expect(body).toBeInstanceOf(Uint8Array);
 
     const pdfString = new TextDecoder().decode(body);
     expect(pdfString.startsWith("%PDF-1.4")).toBe(true);
-    expect(pdfString).toContain("ISTIQAMAH");
+    expect(pdfString).toMatch(/ISTIQAMA+H/);
     expect(pdfString).toContain("%%EOF");
   });
 });

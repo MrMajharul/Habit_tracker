@@ -354,7 +354,7 @@ export interface ExportSelection {
 
 export interface JsonExportDocument {
   metadata: {
-    product: "Istiqamah";
+    product: "Istiqamaah" | "Istiqamah";
     tagline: "Balance your Deen. Organize your life.";
     exportedAt: string;
     timezone: string;

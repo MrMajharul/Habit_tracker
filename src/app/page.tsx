@@ -7,7 +7,7 @@ import { LandingPage } from "@/components/landing/landing-page";
 export const metadata: Metadata = {
   title: "Istiqamaah — Balance your Deen. Organize your life.",
   description:
-    "Plan your day around Salah, build better habits, and make time for what matters. A calm Muslim daily-life companion.",
+    "Balance your Deen. Organize your life. Plan your day around Salah, build better habits, and make time for what matters. A calm Muslim daily-life companion.",
 };
 
 export default function HomePage() {

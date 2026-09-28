@@ -15,6 +15,8 @@ import { hadithService } from "@/services/hadith/hadith-service";
 import { getPrayerDaySummary } from "@/services/prayer";
 import { suggestionEngine } from "@/services/suggestions/suggestion-engine";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dashboard — Istiqamaah",
   description: "Plan your day around Salah, build better habits, and make time for what matters.",

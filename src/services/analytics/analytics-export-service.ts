@@ -22,7 +22,18 @@ const ALL_CATEGORIES: ExportCategory[] = [
 ];
 
 export function csvEscape(value: string | number | boolean | null | undefined): string {
-  const text = value == null ? "" : String(value);
+  if (value == null) return "";
+  let text = String(value);
+
+  // Guard against spreadsheet formula injection (CWE-1236 / CSV Injection)
+  // If a string starts with =, +, -, @, tab, or carriage return, prefix with a single quote (')
+  if (typeof value === "string") {
+    const trimmed = text.trimStart();
+    if (trimmed.length > 0 && /^[=+\-@\t\r]/.test(trimmed)) {
+      text = `'${text}`;
+    }
+  }
+
   if (/[",\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }
@@ -43,7 +54,7 @@ function stamp(dateStr: string): string {
 }
 
 export function exportFileName(kind: string, today: string, extension: string): string {
-  return `istiqamah-${kind}-${today}.${extension}`;
+  return `istiqamaah-${kind}-${today}.${extension}`;
 }
 
 export function buildJsonExport(
@@ -56,7 +67,7 @@ export function buildJsonExport(
 
   const document: JsonExportDocument = {
     metadata: {
-      product: "Istiqamah",
+      product: "Istiqamaah",
       tagline: "Balance your Deen. Organize your life.",
       exportedAt: snapshot.generatedAt,
       timezone: selection.range.timezone,
@@ -237,7 +248,7 @@ function latinize(text: string): string {
 
 export function buildPdfReport(summary: AnalyticsSummary): { filename: string; body: Uint8Array } {
   const lines = [
-    "ISTIQAMAH",
+    "ISTIQAMAAH",
     "Personal Weekly Report",
     "",
     `Period: ${formatRangeLabel(summary.range.startDate, summary.range.endDate)}`,
