@@ -86,8 +86,20 @@ export function TaskCard({
         {isCompleted && <Check className="size-3.5 stroke-[2.5]" />}
       </button>
 
-      {/* Main task content */}
-      <div className="min-w-0 flex-1 space-y-1.5">
+      {/* Main task content — clickable to view/edit details */}
+      <div
+        className="min-w-0 flex-1 space-y-1.5 cursor-pointer"
+        role="button"
+        tabIndex={0}
+        aria-label={`View details for "${task.title}"`}
+        onClick={() => onEdit?.(task)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onEdit?.(task);
+          }
+        }}
+      >
         <div className="flex flex-wrap items-center gap-2">
           {task.subject && (
             <span

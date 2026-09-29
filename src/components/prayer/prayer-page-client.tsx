@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, BellOff, Check, Clock, MapPin, Sparkles } from "lucide-react";
+import { AlertTriangle, Bell, BellOff, Check, Clock, MapPin, ShieldAlert, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -28,6 +28,7 @@ import {
   fetchUserPrayerSettings,
   saveUserPrayerSettings,
 } from "@/services/prayer/prayer-settings-service";
+import { computeForbiddenTimes, type ForbiddenTimeWindow } from "@/services/prayer/forbidden-times";
 
 interface PrayerPageClientProps {
   summary: PrayerDaySummary;
@@ -41,9 +42,88 @@ const PRAYER_DESCRIPTIONS: Record<string, string> = {
   Isha: "Night prayer",
 };
 
+// Calculation method display labels
+const METHOD_LABELS: Record<string, string> = {
+  karachi: "University of Islamic Sciences, Karachi",
+  isna: "Islamic Society of North America (ISNA)",
+  north_america: "Islamic Society of North America (ISNA)",
+  mwl: "Muslim World League",
+  muslim_world_league: "Muslim World League",
+  makkah: "Umm al-Qura University, Makkah",
+  umm_al_qura: "Umm al-Qura University, Makkah",
+  egypt: "Egyptian General Authority of Survey",
+  egyptian: "Egyptian General Authority of Survey",
+  tehran: "Institute of Geophysics, University of Tehran",
+  gulf: "Gulf Region",
+  dubai: "Gulf Region (Dubai)",
+  kuwait: "Kuwait",
+  qatar: "Qatar",
+  singapore: "Majlis Ugama Islam Singapura (MUIS)",
+  muis: "Majlis Ugama Islam Singapura (MUIS)",
+  turkey: "Diyanet İşleri Başkanlığı, Turkey",
+  moonsighting: "Moonsighting Committee Worldwide",
+};
+
+/**
+ * Returns which prayer's time window we're in, based on the current time.
+ * A prayer is "available" once its start time has passed.
+ * The prayer order defines implicit end times (next prayer's start).
+ */
+function isPrayerAvailable(prayerName: PrayerName, allPrayers: PrayerDaySummary["prayers"], now: Date): boolean {
+  const prayer = allPrayers.find((p) => p.name === prayerName);
+  if (!prayer) return false;
+  return now.getTime() >= prayer.time.getTime();
+}
+
 function PrayerCountdownBadge({ time }: { time: Date }) {
   const countdown = usePrayerCountdown(time);
   return <span className="tabular-nums text-base font-semibold">{countdown}</span>;
+}
+
+function ForbiddenTimesSection({ windows }: { windows: ForbiddenTimeWindow[] }) {
+  if (windows.length === 0) return null;
+
+  return (
+    <Card className="border-amber-500/30 bg-amber-500/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm">
+          <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400" />
+          <span>Forbidden Prayer Times</span>
+          <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-700 dark:text-amber-300">
+            Today
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Voluntary (Nafl) prayers should not be performed during these periods.
+          Obligatory (Fard) prayers are not affected.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {windows.map((w) => (
+            <div
+              key={w.name}
+              className="flex items-center gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3"
+            >
+              <div className="flex size-8 items-center justify-center rounded-full bg-amber-500/10">
+                <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">{w.name}</p>
+                <p className="text-[11px] tabular-nums text-muted-foreground">
+                  {formatPrayerTime(w.start)} — {formatPrayerTime(w.end)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-muted-foreground/70 pt-1">
+          Reference: Based on established Islamic jurisprudence regarding prohibited prayer periods
+          (Sahih Muslim 831, Abu Dawud 1274).
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientProps) {
@@ -62,6 +142,15 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
   const [completedPrayers, setCompletedPrayers] = useState<Set<PrayerName>>(
     new Set(initialSummary.prayers.filter((p) => p.completed).map((p) => p.name)),
   );
+
+  const [forbiddenTimes, setForbiddenTimes] = useState<ForbiddenTimeWindow[]>([]);
+  const [now, setNow] = useState(new Date());
+
+  // Update "now" every minute for prayer availability checks
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Sync prayer logs & user settings on client mount
   useEffect(() => {
@@ -95,6 +184,15 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
 
       if (isMounted) {
         setSummary(updatedSummary);
+
+        // Compute forbidden times
+        const forbidden = computeForbiddenTimes({
+          latitude: userSettings.latitude || 23.8103,
+          longitude: userSettings.longitude || 90.4125,
+          calculationMethod: userSettings.calculationMethod || "karachi",
+          asrMadhhab: userSettings.asrMadhhab || "standard",
+        });
+        setForbiddenTimes(forbidden);
       }
     }
 
@@ -110,6 +208,17 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
 
   const handleTogglePrayer = async (prayerName: PrayerName) => {
     const isNowCompleted = !completedPrayers.has(prayerName);
+
+    // Timing validation: prevent marking as complete before prayer time begins
+    if (isNowCompleted && !isPrayerAvailable(prayerName, summary.prayers, now)) {
+      const prayer = summary.prayers.find((p) => p.name === prayerName);
+      toast.warning(`${prayerName.charAt(0).toUpperCase() + prayerName.slice(1)} hasn't started yet`, {
+        description: prayer
+          ? `Available at ${formatPrayerTime(prayer.time)}`
+          : "Please wait for the prayer time to begin.",
+      });
+      return;
+    }
 
     // Optimistic UI update
     setCompletedPrayers((prev) => {
@@ -148,8 +257,20 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
       Array.from(completedPrayers),
     );
     setSummary(updatedSummary);
+
+    // Recompute forbidden times with new settings
+    const forbidden = computeForbiddenTimes({
+      latitude: newSettings.latitude || 23.8103,
+      longitude: newSettings.longitude || 90.4125,
+      calculationMethod: newSettings.calculationMethod || "karachi",
+      asrMadhhab: newSettings.asrMadhhab || "standard",
+    });
+    setForbiddenTimes(forbidden);
+
     toast.success("Prayer schedule updated with live calculations");
   };
+
+  const methodLabel = METHOD_LABELS[settings.calculationMethod] || settings.calculationMethod;
 
   return (
     <div className="space-y-6">
@@ -168,14 +289,17 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
               Live Astronomical
             </Badge>
           </div>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="size-3.5 text-primary" />
-            {summary.location.city}, {summary.location.country}
-            <span className="text-muted-foreground/40">·</span>
-            <span className="capitalize">{settings.calculationMethod}</span>
-            <span className="text-muted-foreground/40">·</span>
-            <span>{settings.asrMadhhab === "hanafi" ? "Hanafi" : "Standard"}</span>
-          </p>
+          <div className="mt-1 space-y-0.5">
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="size-3.5 text-primary" />
+              {summary.location.city}, {summary.location.country}
+              <span className="text-muted-foreground/40">·</span>
+              <span>{settings.asrMadhhab === "hanafi" ? "Hanafi" : "Standard"}</span>
+            </p>
+            <p className="text-[11px] text-muted-foreground/70">
+              Calculation: {methodLabel}
+            </p>
+          </div>
         </div>
         <PrayerSettingsDialog settings={settings} onSave={handleSaveSettings} />
       </div>
@@ -239,6 +363,8 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
         {summary.prayers.map((prayer) => {
           const isCompleted = completedPrayers.has(prayer.name);
           const isNext = summary.nextPrayer?.name === prayer.name && !isCompleted;
+          const available = isPrayerAvailable(prayer.name, summary.prayers, now);
+          const canMark = available || isCompleted; // Allow unmarking even if time hasn't come
 
           return (
             <Card
@@ -247,18 +373,22 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                 "transition-all",
                 isCompleted && "border-emerald-500/30 bg-emerald-500/[0.04]",
                 isNext && !isCompleted && "border-primary/40 shadow-sm",
+                !available && !isCompleted && "opacity-60",
               )}
             >
               <CardContent className="flex items-center gap-4 py-3.5">
                 <button
                   type="button"
                   onClick={() => handleTogglePrayer(prayer.name)}
+                  disabled={!canMark}
                   aria-label={`Toggle ${prayer.label}`}
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-full border-2 transition-all cursor-pointer",
+                    "flex size-10 shrink-0 items-center justify-center rounded-full border-2 transition-all",
                     isCompleted
-                      ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
-                      : "border-border bg-muted/40 hover:border-emerald-500 hover:bg-emerald-500/10",
+                      ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500 cursor-pointer"
+                      : canMark
+                        ? "border-border bg-muted/40 hover:border-emerald-500 hover:bg-emerald-500/10 cursor-pointer"
+                        : "border-border/50 bg-muted/20 cursor-not-allowed",
                   )}
                 >
                   {isCompleted ? (
@@ -274,6 +404,11 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                     {isNext && (
                       <Badge variant="outline" className="border-primary/40 text-[10px] text-primary">
                         Up next
+                      </Badge>
+                    )}
+                    {!available && !isCompleted && (
+                      <Badge variant="outline" className="border-muted-foreground/30 text-[10px] text-muted-foreground">
+                        Not yet
                       </Badge>
                     )}
                   </div>
@@ -309,6 +444,7 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                 <Button
                   size="sm"
                   variant={isCompleted ? "secondary" : "outline"}
+                  disabled={!canMark}
                   className={cn(
                     "shrink-0 h-8 text-xs",
                     isCompleted &&
@@ -321,8 +457,10 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                       <Check className="size-3.5" />
                       Done
                     </span>
-                  ) : (
+                  ) : available ? (
                     "Mark done"
+                  ) : (
+                    "Upcoming"
                   )}
                 </Button>
               </CardContent>
@@ -330,6 +468,9 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
           );
         })}
       </div>
+
+      {/* Forbidden Prayer Times */}
+      <ForbiddenTimesSection windows={forbiddenTimes} />
 
       {/* Prayer-Based Day Planning Hint */}
       <Card className="border-border/60 bg-muted/20">

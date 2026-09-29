@@ -15,6 +15,8 @@ export interface SurahInfo {
   ayahCount: number;
   revelationType: RevelationType;
   juz: number[];
+  banglaName?: string;
+  banglaNameTranslation?: string;
 }
 
 export interface Ayah {
@@ -28,6 +30,8 @@ export interface Ayah {
 export interface AyahWithTranslation extends Ayah {
   translation?: string;
   translationEdition?: string;
+  translationBn?: string;
+  translationBnEdition?: string;
 }
 
 export interface JuzInfo {

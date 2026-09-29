@@ -321,6 +321,22 @@ function QuranReader({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [translationLang, setTranslationLang] = useState<"en" | "bn" | "both">(() => {
+    if (typeof window === "undefined") return "both";
+    try {
+      const saved = localStorage.getItem("istiqamaah_quran_trans_lang");
+      if (saved === "en" || saved === "bn" || saved === "both") return saved;
+    } catch {}
+    return "both";
+  });
+
+  const handleSetLang = (lang: "en" | "bn" | "both") => {
+    setTranslationLang(lang);
+    try {
+      localStorage.setItem("istiqamaah_quran_trans_lang", lang);
+    } catch {}
+  };
+
   useEffect(() => {
     const provider = getQuranProvider();
     let mounted = true;
@@ -408,12 +424,53 @@ function QuranReader({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Header with Navigation and Translation Language Toggle */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
           <ChevronLeft className="size-4" />
           Surahs
         </Button>
+
+        {/* Translation Language Selector */}
+        <div className="flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
+          <button
+            type="button"
+            onClick={() => handleSetLang("bn")}
+            className={cn(
+              "rounded-md px-2.5 py-1 font-medium transition-colors",
+              translationLang === "bn"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            বাংলা
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSetLang("en")}
+            className={cn(
+              "rounded-md px-2.5 py-1 font-medium transition-colors",
+              translationLang === "en"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            English
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSetLang("both")}
+            className={cn(
+              "rounded-md px-2.5 py-1 font-medium transition-colors",
+              translationLang === "both"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Both
+          </button>
+        </div>
+
         <Button
           size="sm"
           variant="outline"
@@ -472,6 +529,7 @@ function QuranReader({
                   key={ayah.number}
                   ayah={ayah}
                   surahNumber={surahNumber}
+                  translationLang={translationLang}
                   onBookmarkToggle={handleBookmarkToggle}
                 />
               ))}
@@ -514,7 +572,7 @@ function QuranReader({
           </div>
 
           <p className="text-center text-[10px] text-muted-foreground">
-            Content source: Al-Quran Cloud API (alquran.cloud) · Sahih International Translation
+            Content source: Al-Quran Cloud API (alquran.cloud) · Sahih International (English) &amp; Maulana Muhiuddin Khan (Bengali)
           </p>
         </>
       )}
@@ -527,10 +585,12 @@ function QuranReader({
 function AyahRow({
   ayah,
   surahNumber,
+  translationLang,
   onBookmarkToggle,
 }: {
   ayah: AyahWithTranslation;
   surahNumber: number;
+  translationLang: "en" | "bn" | "both";
   onBookmarkToggle: (n: number) => void;
 }) {
   const [bookmarked, setBookmarked] = useState(
@@ -579,12 +639,29 @@ function AyahRow({
         {ayah.text}
       </p>
 
-      {/* Translation */}
-      {ayah.translation && (
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          {ayah.translation}
-        </p>
-      )}
+      {/* Translations */}
+      <div className="space-y-2 pt-2">
+        {(translationLang === "bn" || translationLang === "both") && ayah.translationBn && (
+          <p className="text-sm font-normal leading-relaxed text-foreground/90">
+            {translationLang === "both" && (
+              <span className="mr-1.5 inline-block rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                বাংলা
+              </span>
+            )}
+            {ayah.translationBn}
+          </p>
+        )}
+        {(translationLang === "en" || translationLang === "both") && ayah.translation && (
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {translationLang === "both" && (
+              <span className="mr-1.5 inline-block rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                EN
+              </span>
+            )}
+            {ayah.translation}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

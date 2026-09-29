@@ -144,6 +144,8 @@ export async function requestBrowserGeolocation(): Promise<{
   latitude: number;
   longitude: number;
   timezone: string;
+  city?: string;
+  country?: string;
 } | null> {
   if (typeof window === "undefined" || !("geolocation" in navigator)) {
     return null;
@@ -151,11 +153,39 @@ export async function requestBrowserGeolocation(): Promise<{
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(4));
+        const lon = Number(pos.coords.longitude.toFixed(4));
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
+        let city: string | undefined;
+        let country: string | undefined;
+
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`,
+            { headers: { "User-Agent": "Istiqamaah-App/1.0" } },
+          );
+          if (res.ok) {
+            const data = await res.json();
+            city =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.village ||
+              data.address?.municipality ||
+              data.address?.state_district;
+            country = data.address?.country;
+          }
+        } catch {
+          // Graceful fallback: coordinates remain valid even if reverse geocoding fails
+        }
+
         resolve({
-          latitude: Number(pos.coords.latitude.toFixed(4)),
-          longitude: Number(pos.coords.longitude.toFixed(4)),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          latitude: lat,
+          longitude: lon,
+          timezone,
+          city,
+          country,
         });
       },
       () => {

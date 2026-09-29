@@ -4,6 +4,7 @@
 import type {
   CanonicalDhikr,
   CanonicalDua,
+  CustomDhikr,
   DhikrCategory,
   DhikrFavorite,
   DhikrSession,
@@ -363,7 +364,80 @@ export function deleteRamadanGoal(goalId: string): boolean {
   return true;
 }
 
+// ─── Custom (Personal) Dhikr ──────────────────────────────────────────────────
+// User-created dhikr entries, clearly distinguished from verified Sunnah content.
+
+const CUSTOM_DHIKR_KEY = "istiqamaah_custom_dhikr";
+
+export function getCustomDhikr(userId: string): CustomDhikr[] {
+  return getStorage<CustomDhikr>(CUSTOM_DHIKR_KEY).filter(
+    (d) => d.userId === userId,
+  );
+}
+
+export function createCustomDhikr(
+  userId: string,
+  input: {
+    name: string;
+    arabic?: string;
+    transliteration?: string;
+    translation?: string;
+    targetCount: number;
+    category?: DhikrCategory;
+    notes?: string;
+  },
+): CustomDhikr {
+  const now = new Date().toISOString();
+  const dhikr: CustomDhikr = {
+    id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+    userId,
+    name: input.name.trim(),
+    arabic: input.arabic?.trim() || undefined,
+    transliteration: input.transliteration?.trim() || undefined,
+    translation: input.translation?.trim() || undefined,
+    targetCount: Math.max(1, input.targetCount || 33),
+    category: input.category || "personal",
+    notes: input.notes?.trim() || undefined,
+    source: "Personal",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const all = getStorage<CustomDhikr>(CUSTOM_DHIKR_KEY);
+  all.push(dhikr);
+  setStorage(CUSTOM_DHIKR_KEY, all);
+  return dhikr;
+}
+
+export function updateCustomDhikr(
+  userId: string,
+  id: string,
+  updates: Partial<Omit<CustomDhikr, "id" | "userId" | "source" | "createdAt">>,
+): CustomDhikr | null {
+  const all = getStorage<CustomDhikr>(CUSTOM_DHIKR_KEY);
+  const idx = all.findIndex((d) => d.id === id && d.userId === userId);
+  if (idx === -1) return null;
+
+  all[idx] = {
+    ...all[idx],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  setStorage(CUSTOM_DHIKR_KEY, all);
+  return all[idx];
+}
+
+export function deleteCustomDhikr(userId: string, id: string): boolean {
+  const all = getStorage<CustomDhikr>(CUSTOM_DHIKR_KEY);
+  const filtered = all.filter((d) => !(d.id === id && d.userId === userId));
+  if (filtered.length === all.length) return false;
+  setStorage(CUSTOM_DHIKR_KEY, filtered);
+  return true;
+}
+
 // ─── Re-exports ───────────────────────────────────────────────────────────────
 
 export { VerifiedDhikrProvider } from "./dhikr-provider";
 export type { DhikrContentProvider } from "./dhikr-provider";
+export type { CustomDhikr } from "./dhikr-types";
+

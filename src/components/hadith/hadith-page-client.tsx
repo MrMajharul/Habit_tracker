@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, Search, Share2, Sparkles } from "lucide-react";
+import { Bookmark, BookmarkCheck, Crown, Search, Share2, Sparkles } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { HADITH_COLLECTIONS } from "@/services/hadith/hadith-service";
 import type { HadithRecord } from "@/services/hadith/types";
 
 interface HadithPageClientProps {
@@ -17,10 +18,13 @@ interface HadithPageClientProps {
 const BOOKMARK_KEY = "istiqamaah_hadith_bookmarks";
 const LEGACY_BOOKMARK_KEY = "noorpath_hadith_bookmarks";
 
+type ViewTab = "all" | "popular" | "bookmarked";
+
 export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedTopic, setSelectedTopic] = React.useState<string>("all");
-  const [showOnlyBookmarked, setShowOnlyBookmarked] = React.useState(false);
+  const [selectedCollection, setSelectedCollection] = React.useState<string>("all");
+  const [viewTab, setViewTab] = React.useState<ViewTab>("all");
   const [bookmarkedIds, setBookmarkedIds] = React.useState<string[]>([]);
 
   React.useEffect(() => {
@@ -80,10 +84,32 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
     return Array.from(set);
   }, [initialHadiths]);
 
+  // Extract unique collections
+  const collections = React.useMemo(() => {
+    const set = new Set<string>();
+    initialHadiths.forEach((h) => {
+      if (h.source) set.add(h.source);
+    });
+    return Array.from(set);
+  }, [initialHadiths]);
+
+  // Popular hadiths
+  const popularHadiths = React.useMemo(() => {
+    return initialHadiths.filter((h) => h.isPopular);
+  }, [initialHadiths]);
+
   // Filter hadiths
   const filteredHadiths = React.useMemo(() => {
-    return initialHadiths.filter((h) => {
-      if (showOnlyBookmarked && !bookmarkedIds.includes(h.id)) {
+    let source = initialHadiths;
+
+    if (viewTab === "popular") {
+      source = popularHadiths;
+    } else if (viewTab === "bookmarked") {
+      source = initialHadiths.filter((h) => bookmarkedIds.includes(h.id));
+    }
+
+    return source.filter((h) => {
+      if (selectedCollection !== "all" && h.source !== selectedCollection) {
         return false;
       }
       if (selectedTopic !== "all" && h.topic !== selectedTopic) {
@@ -101,7 +127,7 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
       }
       return true;
     });
-  }, [initialHadiths, showOnlyBookmarked, bookmarkedIds, selectedTopic, searchTerm]);
+  }, [initialHadiths, popularHadiths, viewTab, bookmarkedIds, selectedCollection, selectedTopic, searchTerm]);
 
   return (
     <div className="space-y-6">
@@ -114,19 +140,35 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
             Authentic, source-controlled Hadiths with Arabic, English, and Bangla translations.
           </p>
         </div>
-        <Button
-          variant={showOnlyBookmarked ? "default" : "outline"}
-          size="sm"
-          className="gap-2 self-start sm:self-auto"
-          onClick={() => setShowOnlyBookmarked(!showOnlyBookmarked)}
-        >
-          {showOnlyBookmarked ? (
-            <BookmarkCheck className="size-4" />
-          ) : (
-            <Bookmark className="size-4" />
-          )}
-          <span>Bookmarked ({bookmarkedIds.length})</span>
-        </Button>
+      </div>
+
+      {/* View Tabs */}
+      <div className="flex gap-2 rounded-xl bg-muted/60 p-1">
+        {([
+          { id: "all" as const, label: "All", count: initialHadiths.length },
+          { id: "popular" as const, label: "Popular", count: popularHadiths.length, icon: Crown },
+          { id: "bookmarked" as const, label: "Bookmarked", count: bookmarkedIds.length, icon: Bookmark },
+        ]).map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setViewTab(tab.id)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all flex-1 justify-center ${
+                viewTab === tab.id
+                  ? "bg-card text-foreground shadow-xs border border-border/80"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {Icon && <Icon className="size-3.5" />}
+              <span>{tab.label}</span>
+              <Badge variant="secondary" className="ml-1 text-[10px] h-5 min-w-5 px-1.5">
+                {tab.count}
+              </Badge>
+            </button>
+          );
+        })}
       </div>
 
       {/* Verified Notice */}
@@ -135,10 +177,10 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
           <Sparkles className="size-3.5 text-gold" />
           Source Integrity Guarantee:
         </strong>
-        Every narration is cross-referenced from verified canonical collections (Sahih al-Bukhari, Sahih Muslim, Jami` at-Tirmidhi, Sunan Abi Dawud). Content is never artificially synthesized.
+        Every narration is cross-referenced from verified canonical collections (Sahih al-Bukhari, Sahih Muslim, Jami` at-Tirmidhi, Sunan Abi Dawud, Sunan an-Nasa&apos;i, Sunan Ibn Majah). Content is never artificially synthesized.
       </div>
 
-      {/* Search and Topic Filters */}
+      {/* Search and Filters */}
       <div className="space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -150,7 +192,43 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
           />
         </div>
 
+        {/* Collection filter */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+            Collection:
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedCollection("all")}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              selectedCollection === "all"
+                ? "bg-primary text-primary-foreground"
+                : "border border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            All
+          </button>
+          {collections.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setSelectedCollection(c)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                selectedCollection === c
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {HADITH_COLLECTIONS.find((col) => col.name === c)?.name.split(" ").slice(-1)[0] || c}
+            </button>
+          ))}
+        </div>
+
+        {/* Topic filter */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+            Topic:
+          </span>
           <button
             type="button"
             onClick={() => setSelectedTopic("all")}
@@ -206,6 +284,12 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
                       {hadith.topic && (
                         <Badge variant="outline" className="text-[10px] capitalize">
                           {hadith.topic}
+                        </Badge>
+                      )}
+                      {hadith.isPopular && (
+                        <Badge variant="secondary" className="text-[10px] bg-gold/15 text-gold border-gold/30">
+                          <Crown className="size-2.5 mr-0.5" />
+                          Popular
                         </Badge>
                       )}
                     </div>
@@ -278,16 +362,18 @@ export function HadithPageClient({ initialHadiths }: HadithPageClientProps) {
           <CardContent className="py-12 text-center">
             <p className="text-sm font-medium">No Hadiths match your filter</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {showOnlyBookmarked
+              {viewTab === "bookmarked"
                 ? "You haven't bookmarked any Hadiths yet."
-                : "Try searching with different terms or reset topic filters."}
+                : viewTab === "popular"
+                  ? "No popular Hadiths match your search."
+                  : "Try searching with different terms or reset topic filters."}
             </p>
-            {showOnlyBookmarked && (
+            {viewTab !== "all" && (
               <Button
                 variant="outline"
                 size="sm"
                 className="mt-4"
-                onClick={() => setShowOnlyBookmarked(false)}
+                onClick={() => setViewTab("all")}
               >
                 Show All Hadiths
               </Button>

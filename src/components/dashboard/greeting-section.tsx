@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { DailyReflectionDialog } from "@/components/reflection/daily-reflection-dialog";
 import { formatGregorianDate, formatHijriDate } from "@/lib/dates";
 import type { UserProfile } from "@/types";
@@ -11,6 +14,34 @@ export function GreetingSection({
   profile,
   date = new Date(),
 }: GreetingSectionProps) {
+  const [displayName, setDisplayName] = useState(profile.name);
+
+  useEffect(() => {
+    const updateName = () => {
+      try {
+        const saved =
+          localStorage.getItem("istiqamaah_local_profile") ??
+          localStorage.getItem("noorpath_local_profile");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.name && typeof parsed.name === "string" && parsed.name.trim()) {
+            setDisplayName(parsed.name.trim());
+          }
+        }
+      } catch {
+        // Ignore local storage error
+      }
+    };
+
+    updateName();
+    window.addEventListener("storage", updateName);
+    window.addEventListener("istiqamaah_profile_updated", updateName);
+    return () => {
+      window.removeEventListener("storage", updateName);
+      window.removeEventListener("istiqamaah_profile_updated", updateName);
+    };
+  }, []);
+
   return (
     <section className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
       <div className="space-y-1">
@@ -18,7 +49,7 @@ export function GreetingSection({
           Assalamu Alaikum
         </p>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {profile.name}
+          {displayName}
         </h1>
         <div className="flex flex-col gap-0.5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
           <span>{formatGregorianDate(date)}</span>

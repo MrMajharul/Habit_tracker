@@ -10,4 +10,7 @@ export interface HadithRecord {
   topic: string | null;
   isVerified: boolean;
   sourceUrl?: string;
+  /** Marks popular/well-known hadiths for the Popular section */
+  isPopular?: boolean;
 }
+

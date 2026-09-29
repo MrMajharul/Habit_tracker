@@ -18,7 +18,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { requestBrowserGeolocation } from "@/services/prayer/prayer-settings-service";
+import {
+  requestBrowserGeolocation,
+  saveUserPrayerSettings,
+} from "@/services/prayer/prayer-settings-service";
 import type { PrayerSettings } from "@/services/prayer";
 
 const settingsSchema = z.object({
@@ -44,7 +47,7 @@ interface PrayerSettingsDialogProps {
   onSave: (settings: PrayerSettingsState) => void;
 }
 
-const CALCULATION_METHODS = [
+export const CALCULATION_METHODS = [
   { value: "karachi", label: "University of Islamic Sciences, Karachi" },
   { value: "isna", label: "ISNA (North America)" },
   { value: "mwl", label: "Muslim World League" },
@@ -94,8 +97,13 @@ export function PrayerSettingsDialog({
       setValue("latitude", coords.latitude);
       setValue("longitude", coords.longitude);
       setValue("timezone", coords.timezone);
+      if (coords.city) setValue("city", coords.city);
+      if (coords.country) setValue("country", coords.country);
+
       toast.success("Location acquired from browser", {
-        description: `Coordinates: ${coords.latitude}°, ${coords.longitude}°`,
+        description: coords.city
+          ? `${coords.city}, ${coords.country} (${coords.latitude}°, ${coords.longitude}°)`
+          : `Coordinates: ${coords.latitude}°, ${coords.longitude}°`,
       });
     } else {
       toast.error("Location access denied or unavailable", {
@@ -104,8 +112,10 @@ export function PrayerSettingsDialog({
     }
   };
 
-  const onSubmit = (values: SettingsFormValues) => {
-    onSave({ ...settings, ...values });
+  const onSubmit = async (values: SettingsFormValues) => {
+    const updated = { ...settings, ...values };
+    onSave(updated);
+    await saveUserPrayerSettings(updated);
     toast.success("Prayer settings saved & recalculated");
     setOpen(false);
   };

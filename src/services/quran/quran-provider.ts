@@ -163,22 +163,25 @@ export class AlQuranCloudProvider implements QuranContentProvider {
     if (cached) return cached;
 
     try {
-      // Fetch Arabic text and English translation in parallel
-      const [arabicRes, translationRes] = await Promise.all([
-        fetch(`${this.baseUrl}/surah/${surahNumber}/quran-uthmani`),
-        fetch(`${this.baseUrl}/surah/${surahNumber}/en.sahih`),
+      // Fetch Arabic text, English translation, and Bengali translation in parallel
+      const [arabicRes, translationRes, bnRes] = await Promise.all([
+        fetch(`${this.baseUrl}/surah/${surahNumber}/quran-uthmani`).catch(() => null),
+        fetch(`${this.baseUrl}/surah/${surahNumber}/en.sahih`).catch(() => null),
+        fetch(`${this.baseUrl}/surah/${surahNumber}/bn.bengali`).catch(() => null),
       ]);
 
-      if (!arabicRes.ok || !translationRes.ok) {
+      if (!arabicRes || !arabicRes.ok) {
         console.warn(`Failed to fetch ayahs for Surah ${surahNumber}`);
         return [];
       }
 
       const arabicData = await arabicRes.json();
-      const translationData = await translationRes.json();
+      const translationData = translationRes && translationRes.ok ? await translationRes.json() : null;
+      const bnData = bnRes && bnRes.ok ? await bnRes.json() : null;
 
       const arabicAyahs = arabicData?.data?.ayahs ?? [];
       const translationAyahs = translationData?.data?.ayahs ?? [];
+      const bnAyahs = bnData?.data?.ayahs ?? [];
 
       const ayahs: AyahWithTranslation[] = arabicAyahs.map(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,6 +193,8 @@ export class AlQuranCloudProvider implements QuranContentProvider {
           page: a.page,
           translation: translationAyahs[idx]?.text ?? undefined,
           translationEdition: "Sahih International (en.sahih)",
+          translationBn: bnAyahs[idx]?.text ?? undefined,
+          translationBnEdition: "Maulana Muhiuddin Khan (bn.bengali)",
         }),
       );
 

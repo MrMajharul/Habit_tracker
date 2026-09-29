@@ -12,7 +12,25 @@ export type DhikrCategory =
   | "gratitude"
   | "forgiveness"
   | "ramadan"
-  | "dua";
+  | "dua"
+  | "personal";
+
+/** User-created personal dhikr (not from verified Islamic sources) */
+export interface CustomDhikr {
+  id: string;
+  userId: string;
+  name: string;
+  arabic?: string;
+  transliteration?: string;
+  translation?: string;
+  targetCount: number;
+  category: DhikrCategory;
+  notes?: string;
+  source: "Personal";
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export type DhikrGrade =
   | "sahih"

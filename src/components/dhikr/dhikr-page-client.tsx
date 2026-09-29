@@ -18,6 +18,8 @@ import {
   Star,
   Sunrise,
   Sunset,
+  Trash2,
+  User,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -29,12 +31,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { CanonicalDhikr, DhikrCategory } from "@/services/dhikr/dhikr-types";
+import type { CanonicalDhikr, CustomDhikr, DhikrCategory } from "@/services/dhikr/dhikr-types";
 import {
   addDhikrFavorite,
   completeDhikrSession,
   createDhikrSession,
+  deleteCustomDhikr,
   getAllDhikr,
+  getCustomDhikr,
   getDhikrByCategory,
   getDhikrFavorites,
   isDhikrFavorite,
@@ -42,6 +46,7 @@ import {
   searchDhikr,
   updateDhikrSession,
 } from "@/services/dhikr/dhikr-service";
+import { CustomDhikrDialog } from "./custom-dhikr-dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,11 +58,29 @@ interface CounterState {
   sessionId?: string;
 }
 
+// ─── Helper: Custom to Canonical Adapter ──────────────────────────────────────
+
+function customToCanonical(custom: CustomDhikr): CanonicalDhikr {
+  return {
+    id: custom.id,
+    arabic: custom.arabic || custom.name,
+    transliteration: custom.transliteration,
+    translationEn: custom.translation || custom.name,
+    translationBn: custom.translation,
+    recommendedCount: custom.targetCount,
+    category: custom.category,
+    source: "Personal",
+    reference: custom.notes || "Personal Custom Dhikr",
+    grade: "ungraded",
+  };
+}
+
 // ─── Category Metadata ────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<DhikrCategory | "favorites" | "all", { label: string; icon: LucideIcon }> = {
   all: { label: "All Dhikr", icon: Layers },
   favorites: { label: "Favorites", icon: Heart },
+  personal: { label: "My Dhikr", icon: User },
   morning: { label: "Morning", icon: Sunrise },
   evening: { label: "Evening", icon: Sunset },
   after_salah: { label: "After Salah", icon: Compass },
@@ -73,6 +96,7 @@ const CATEGORY_META: Record<DhikrCategory | "favorites" | "all", { label: string
 const CATEGORY_ORDER: (DhikrCategory | "favorites" | "all")[] = [
   "all",
   "favorites",
+  "personal",
   "morning",
   "evening",
   "after_salah",
@@ -93,11 +117,13 @@ function DhikrLibraryCard({
   isFav,
   onStartCounter,
   onToggleFavorite,
+  onDelete,
 }: {
   dhikr: CanonicalDhikr;
   isFav: boolean;
   onStartCounter: (d: CanonicalDhikr) => void;
   onToggleFavorite: (d: CanonicalDhikr) => void;
+  onDelete?: (id: string) => void;
 }) {
   return (
     <Card className="group transition-all hover:border-primary/30 hover:shadow-sm">
@@ -130,7 +156,12 @@ function DhikrLibraryCard({
             <Badge variant="outline" className="text-[10px]">
               {CATEGORY_META[dhikr.category]?.label ?? dhikr.category}
             </Badge>
-            <span className="text-[10px] text-muted-foreground">{dhikr.source}</span>
+            <span className={cn(
+              "text-[10px]",
+              dhikr.source === "Personal" ? "font-semibold text-primary" : "text-muted-foreground"
+            )}>
+              {dhikr.source}
+            </span>
             {dhikr.grade && dhikr.grade !== "ungraded" && (
               <Badge variant="outline" className="text-[10px] capitalize">
                 {dhikr.grade}
@@ -142,29 +173,42 @@ function DhikrLibraryCard({
           <p className="text-[10px] text-muted-foreground/60">{dhikr.reference}</p>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-1">
-            <Button
-              size="sm"
-              onClick={() => onStartCounter(dhikr)}
-              className="gap-2"
-            >
-              <Sparkles className="size-3.5" />
-              Start Dhikr
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={() => onToggleFavorite(dhikr)}
-              aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
-            >
-              <Heart
-                className={cn(
-                  "size-4 transition-colors",
-                  isFav ? "fill-red-500 text-red-500" : "text-muted-foreground",
-                )}
-              />
-            </Button>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => onStartCounter(dhikr)}
+                className="gap-2"
+              >
+                <Sparkles className="size-3.5" />
+                Start Dhikr
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={() => onToggleFavorite(dhikr)}
+                aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+              >
+                <Heart
+                  className={cn(
+                    "size-4 transition-colors",
+                    isFav ? "fill-red-500 text-red-500" : "text-muted-foreground",
+                  )}
+                />
+              </Button>
+            </div>
+            {dhikr.source === "Personal" && onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 text-muted-foreground hover:text-destructive transition-colors"
+                onClick={() => onDelete(dhikr.id)}
+                aria-label="Delete personal dhikr"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
@@ -550,20 +594,50 @@ export function DhikrPageClient() {
     const favs = getDhikrFavorites(MOCK_USER_ID);
     return new Set(favs.map((f) => f.dhikrId));
   });
+  const [customDhikrs, setCustomDhikrs] = useState<CustomDhikr[]>(() => {
+    if (typeof window === "undefined") return [];
+    return getCustomDhikr(MOCK_USER_ID);
+  });
+
+  const handleCustomCreated = useCallback((newDhikr: CustomDhikr) => {
+    setCustomDhikrs((prev) => [...prev, newDhikr]);
+    setActiveCategory("personal");
+  }, []);
+
+  const handleDeleteCustom = useCallback((id: string) => {
+    if (deleteCustomDhikr(MOCK_USER_ID, id)) {
+      setCustomDhikrs((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Personal dhikr removed");
+    }
+  }, []);
 
   // Get filtered dhikr items
   const filteredItems = useMemo(() => {
+    const canonicalCustom = customDhikrs.map(customToCanonical);
     if (searchQuery.trim()) {
-      return searchDhikr(searchQuery.trim());
+      const q = searchQuery.trim().toLowerCase();
+      const canonicalMatches = searchDhikr(searchQuery.trim());
+      const customMatches = canonicalCustom.filter(
+        (c) =>
+          c.arabic.toLowerCase().includes(q) ||
+          c.translationEn.toLowerCase().includes(q) ||
+          (c.transliteration && c.transliteration.toLowerCase().includes(q)),
+      );
+      return [...customMatches, ...canonicalMatches];
     }
     if (activeCategory === "all") {
-      return getAllDhikr();
+      return [...canonicalCustom, ...getAllDhikr()];
+    }
+    if (activeCategory === "personal") {
+      return canonicalCustom;
     }
     if (activeCategory === "favorites") {
-      return getAllDhikr().filter((d) => favoriteIds.has(d.id));
+      const all = [...canonicalCustom, ...getAllDhikr()];
+      return all.filter((d) => favoriteIds.has(d.id));
     }
-    return getDhikrByCategory(activeCategory);
-  }, [activeCategory, searchQuery, favoriteIds]);
+    const catCustom = canonicalCustom.filter((c) => c.category === activeCategory);
+    return [...catCustom, ...getDhikrByCategory(activeCategory)];
+  }, [activeCategory, searchQuery, favoriteIds, customDhikrs]);
 
   const handleStartCounter = useCallback((dhikr: CanonicalDhikr) => {
     const session = createDhikrSession(MOCK_USER_ID, dhikr.id, dhikr.recommendedCount);
@@ -689,6 +763,7 @@ export function DhikrPageClient() {
             Remembrance of Allah. Content from verified Islamic sources.
           </p>
         </div>
+        <CustomDhikrDialog userId={MOCK_USER_ID} onCreated={handleCustomCreated} />
       </div>
 
       {/* Quick actions */}
@@ -804,6 +879,7 @@ export function DhikrPageClient() {
               isFav={favoriteIds.has(dhikr.id)}
               onStartCounter={handleStartCounter}
               onToggleFavorite={handleToggleFavorite}
+              onDelete={handleDeleteCustom}
             />
           ))}
         </div>

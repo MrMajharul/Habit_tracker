@@ -470,26 +470,61 @@ export function FocusPageClient() {
             </div>
           </div>
 
-          {/* Custom Duration Input */}
+          {/* Custom Duration Input with +/- Controls */}
           {mode === "CUSTOM" && status === "IDLE" && (
-            <div className="flex items-center gap-3 pt-1">
+            <div className="flex flex-col items-center gap-2 pt-1">
               <Label htmlFor="custom-duration" className="text-xs text-muted-foreground">
                 Duration (minutes):
               </Label>
-              <Input
-                id="custom-duration"
-                type="number"
-                min={5}
-                max={180}
-                step={5}
-                value={customMinutes}
-                onChange={(e) => {
-                  const val = Math.max(5, Math.min(180, Number(e.target.value) || 25));
-                  setCustomMinutes(val);
-                  setRemainingSeconds(val * 60);
-                }}
-                className="w-20 text-center font-semibold"
-              />
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Decrease duration"
+                  disabled={customMinutes <= 5}
+                  onClick={() => {
+                    const val = Math.max(5, customMinutes - 5);
+                    setCustomMinutes(val);
+                    setRemainingSeconds(val * 60);
+                  }}
+                  className="size-11 rounded-full text-lg font-bold shrink-0"
+                >
+                  −
+                </Button>
+                <Input
+                  id="custom-duration"
+                  type="number"
+                  min={5}
+                  max={180}
+                  step={5}
+                  value={customMinutes}
+                  onChange={(e) => {
+                    const val = Math.max(5, Math.min(180, Number(e.target.value) || 25));
+                    setCustomMinutes(val);
+                    setRemainingSeconds(val * 60);
+                  }}
+                  className="w-20 text-center font-semibold text-lg"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label="Increase duration"
+                  disabled={customMinutes >= 180}
+                  onClick={() => {
+                    const val = Math.min(180, customMinutes + 5);
+                    setCustomMinutes(val);
+                    setRemainingSeconds(val * 60);
+                  }}
+                  className="size-11 rounded-full text-lg font-bold shrink-0"
+                >
+                  +
+                </Button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Min: 5 min · Max: 180 min · Step: 5 min
+              </p>
             </div>
           )}
 

@@ -25,9 +25,15 @@ import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
 import { clearUserLocalData } from "@/lib/cache/user-cache";
 
 import {
+  CALCULATION_METHODS,
   PrayerSettingsDialog,
   type PrayerSettingsState,
 } from "@/components/prayer/prayer-settings-dialog";
+import {
+  fetchUserPrayerSettings,
+  getLocalPrayerSettings,
+  saveLocalPrayerSettings,
+} from "@/services/prayer/prayer-settings-service";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -129,22 +135,34 @@ export function SettingsPageClient() {
   });
 
   // Prayer settings state
-  const [prayerSettings, setPrayerSettings] = React.useState<PrayerSettingsState>({
-    city: "Dhaka",
-    country: "Bangladesh",
-    calculationMethod: "karachi",
-    asrMadhhab: "standard",
-    manualOffsetMinutes: 0,
-    latitude: 23.8103,
-    longitude: 90.4125,
-    timezone: "Asia/Dhaka",
+  const [prayerSettings, setPrayerSettings] = React.useState<PrayerSettingsState>(() => {
+    const local = getLocalPrayerSettings();
+    return {
+      ...local,
+      city: local.city || "Dhaka",
+      country: local.country || "Bangladesh",
+    };
   });
 
   React.useEffect(() => {
     let active = true;
 
-    // Fetch user profile from Supabase
+    // Fetch user profile from Supabase and prayer settings
     async function loadUserProfile() {
+      try {
+        const remoteSettings = await fetchUserPrayerSettings();
+        if (active && remoteSettings) {
+          setPrayerSettings((prev) => ({
+            ...prev,
+            ...remoteSettings,
+            city: remoteSettings.city || prev.city,
+            country: remoteSettings.country || prev.country,
+          }));
+        }
+      } catch {
+        // Ignore settings fetch error
+      }
+
       if (!isSupabaseConfigured || isDevAuthBypass) {
         return;
       }
@@ -227,11 +245,12 @@ export function SettingsPageClient() {
           "istiqamaah_local_profile",
           JSON.stringify({
             name: profile.name.trim(),
-            city: profile.city,
-            country: profile.country,
+            city: profile.city.trim(),
+            country: profile.country.trim(),
             timezone: profile.timezone,
           }),
         );
+        window.dispatchEvent(new Event("istiqamaah_profile_updated"));
       } catch {
         // Ignore storage errors
       }
@@ -246,8 +265,8 @@ export function SettingsPageClient() {
           await supabase.from("profiles").upsert({
             id: user.id,
             name: profile.name.trim(),
-            city: profile.city,
-            country: profile.country,
+            city: profile.city.trim(),
+            country: profile.country.trim(),
             timezone: profile.timezone,
             updated_at: new Date().toISOString(),
           });
@@ -360,8 +379,8 @@ export function SettingsPageClient() {
         <Card>
           <CardHeader className="pb-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <User className="size-5" />
+              <div className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-bold text-lg border border-primary/20">
+                {profile.name ? profile.name.trim().charAt(0).toUpperCase() : <User className="size-5" />}
               </div>
               <div>
                 <CardTitle className="text-base">{profile.name || "My Account"}</CardTitle>
@@ -391,6 +410,24 @@ export function SettingsPageClient() {
                   className="bg-muted/50"
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prof-city">City</Label>
+                <Input
+                  id="prof-city"
+                  value={profile.city}
+                  placeholder="e.g. Dhaka, London, Istanbul"
+                  onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prof-country">Country</Label>
+                <Input
+                  id="prof-country"
+                  value={profile.country}
+                  placeholder="e.g. Bangladesh, UK, Turkey"
+                  onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                />
+              </div>
             </div>
             <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -403,7 +440,7 @@ export function SettingsPageClient() {
                 disabled={savingProfile}
                 onClick={handleSaveProfile}
               >
-                {savingProfile ? "Saving..." : "Save"}
+                {savingProfile ? "Saving..." : "Save Profile"}
               </Button>
             </div>
           </CardContent>
@@ -520,16 +557,22 @@ export function SettingsPageClient() {
           </h2>
           <PrayerSettingsDialog
             settings={prayerSettings}
-            onSave={(newSettings) => setPrayerSettings(newSettings)}
+            onSave={(newSettings) => {
+              setPrayerSettings(newSettings);
+              saveLocalPrayerSettings(newSettings);
+            }}
           />
         </div>
         <Card>
           <CardContent className="p-4 sm:p-6 space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium">Location</span>
+                <span className="text-sm font-medium">Your Location</span>
                 <p className="text-xs text-muted-foreground">
                   {prayerSettings.city}, {prayerSettings.country}
+                </p>
+                <p className="text-[10px] text-muted-foreground/70">
+                  {prayerSettings.latitude.toFixed(2)}°, {prayerSettings.longitude.toFixed(2)}° ({prayerSettings.timezone})
                 </p>
               </div>
               <Badge variant="outline">Current</Badge>
@@ -538,11 +581,14 @@ export function SettingsPageClient() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-sm font-medium">Calculation Method</span>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {prayerSettings.calculationMethod}
+                <p className="text-xs text-muted-foreground">
+                  {CALCULATION_METHODS.find((m) => m.value === prayerSettings.calculationMethod)?.label ||
+                    prayerSettings.calculationMethod}
                 </p>
               </div>
-              <Badge variant="secondary">Karachi</Badge>
+              <Badge variant="secondary" className="uppercase font-mono text-[10px]">
+                {prayerSettings.calculationMethod}
+              </Badge>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
