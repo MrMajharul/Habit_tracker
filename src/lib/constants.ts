@@ -3,6 +3,7 @@ export const APP_DESCRIPTION =
   "Plan your day around Salah, build better habits, and make time for what matters.";
 
 export const isDevAuthBypass =
+  process.env.NODE_ENV === "development" &&
   process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
 
 export const isSupabaseConfigured = Boolean(
