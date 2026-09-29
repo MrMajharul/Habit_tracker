@@ -27,8 +27,16 @@ interface PrayerTimesCardProps {
   summary: PrayerDaySummary;
 }
 
+function PrayerCountdownDisplay({ target }: { target: Date | null }) {
+  const countdown = usePrayerCountdown(target);
+  return (
+    <p className="text-lg font-semibold tabular-nums text-foreground">
+      {countdown}
+    </p>
+  );
+}
+
 export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
-  const countdown = usePrayerCountdown(summary.nextPrayer?.time ?? null);
   const [completedMap, setCompletedMap] = useState<Record<PrayerName, boolean>>(() => {
     const init: Record<PrayerName, boolean> = {
       fajr: false,
@@ -117,9 +125,7 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
                   {formatPrayerTime(summary.nextPrayer.time)}
                 </p>
               </div>
-              <p className="text-lg font-semibold tabular-nums text-foreground">
-                {countdown}
-              </p>
+              <PrayerCountdownDisplay target={summary.nextPrayer.time} />
             </div>
           </div>
         ) : null}

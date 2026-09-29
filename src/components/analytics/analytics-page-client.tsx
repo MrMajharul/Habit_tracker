@@ -27,11 +27,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import dynamic from "next/dynamic";
 import { PeriodSelector } from "./period-selector";
 import { ActivityHeatmap } from "./activity-heatmap";
-import { TrendChart } from "./charts/trend-chart";
-import { AnalyticsAreaChart } from "./charts/area-chart";
-import { SubjectDistributionChart } from "./charts/subject-distribution-chart";
+
+const TrendChart = dynamic(
+  () => import("./charts/trend-chart").then((m) => m.TrendChart),
+  {
+    loading: () => <div className="h-52 w-full animate-pulse rounded-xl bg-muted/30" />,
+  },
+);
+
+const AnalyticsAreaChart = dynamic(
+  () => import("./charts/area-chart").then((m) => m.AnalyticsAreaChart),
+  {
+    loading: () => <div className="h-52 w-full animate-pulse rounded-xl bg-muted/30" />,
+  },
+);
+
+const SubjectDistributionChart = dynamic(
+  () => import("./charts/subject-distribution-chart").then((m) => m.SubjectDistributionChart),
+  {
+    loading: () => <div className="h-52 w-full animate-pulse rounded-xl bg-muted/30" />,
+  },
+);
 import {
   analyticsService,
   clearAnalyticsMemo,

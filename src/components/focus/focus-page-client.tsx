@@ -207,7 +207,8 @@ export function FocusPageClient() {
         setRemainingSeconds(0);
         handleSessionCompleted();
       } else {
-        setRemainingSeconds(Math.ceil(diffMs / 1000));
+        const nextSec = Math.max(0, Math.ceil(diffMs / 1000));
+        setRemainingSeconds((prev) => (prev === nextSec ? prev : nextSec));
       }
     }, 250);
 

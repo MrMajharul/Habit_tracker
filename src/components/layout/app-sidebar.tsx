@@ -13,9 +13,18 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/features/navigation/nav-items";
 
+import { useState } from "react";
+
 export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setPendingHref(null);
+  }
 
   const handleSignOut = async () => {
     try {
@@ -35,27 +44,35 @@ export function AppSidebar() {
   return (
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:border-sidebar-border lg:bg-sidebar">
       <div className="flex h-16 items-center border-b border-sidebar-border px-5">
-        <Link href="/dashboard">
+        <Link href="/dashboard" onClick={() => setPendingHref("/dashboard")}>
           <AppLogo size="sm" />
         </Link>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-4">
         {mainNavItems.map((item) => {
-          const isActive =
+          const isCurrent =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const isPending = pendingHref === item.href;
+          const isActive = isPending || (isCurrent && !pendingHref);
           const Icon = item.icon;
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => {
+                if (item.href !== pathname) {
+                  setPendingHref(item.href);
+                }
+              }}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+                isPending && "animate-pulse",
               )}
             >
               <Icon className="size-4 shrink-0" />

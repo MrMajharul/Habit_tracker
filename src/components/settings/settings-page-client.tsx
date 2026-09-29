@@ -176,9 +176,9 @@ export function SettingsPageClient() {
         if (user && active) {
           const { data: dbProfile } = await supabase
             .from("profiles")
-            .select("*")
+            .select("name, email, city, country, timezone")
             .eq("id", user.id)
-            .single();
+            .maybeSingle();
 
           if (!active) return;
 

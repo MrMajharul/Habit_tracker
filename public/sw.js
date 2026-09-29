@@ -1,19 +1,9 @@
-// Istiqamaah Service Worker
-const CACHE_NAME = "istiqamaah-v2";
+// Istiqamaah Service Worker v3
+const CACHE_NAME = "istiqamaah-v3";
 const OFFLINE_URL = "/dashboard";
 
 const STATIC_ASSETS = [
   "/",
-  "/dashboard",
-  "/prayer",
-  "/habits",
-  "/focus",
-  "/tasks",
-  "/subjects",
-  "/quran",
-  "/quran/bookmarks",
-  "/goals",
-  "/dhikr",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -51,33 +41,57 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  // Avoid intercepting auth or API calls
+  // Strictly ignore cross-origin requests; never intercept or cache cross-origin (e.g. Supabase, external APIs)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Never intercept auth, api, or server actions
   if (url.pathname.startsWith("/api") || url.pathname.startsWith("/auth")) {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached, but revalidate in background
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, networkResponse);
-              });
-            }
-          })
-          .catch(() => {});
-        return cachedResponse;
-      }
+  // Cache static assets (fonts, icons, _next/static) — cache-first for instant delivery
+  const isStatic =
+    url.pathname.startsWith("/_next/static") ||
+    url.pathname.startsWith("/icons") ||
+    url.pathname.endsWith(".png") ||
+    url.pathname.endsWith(".svg") ||
+    url.pathname.endsWith(".ico") ||
+    url.pathname.endsWith(".webmanifest");
 
-      return fetch(event.request).catch(() => {
-        // Fallback to offline dashboard shell if navigation request
+  if (isStatic) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
+  // Navigation and dynamic pages: network-first with background cache update and offline fallback
+  event.respondWith(
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      })
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
         if (event.request.mode === "navigate") {
           return caches.match(OFFLINE_URL);
         }
-      });
-    })
+      })
   );
 });

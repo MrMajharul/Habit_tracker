@@ -83,30 +83,54 @@ export async function getDashboardData(): Promise<DashboardData> {
       };
     }
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    const profile = data as ProfileRow | null;
-
-    // Fetch user's active habits
-    const { data: dbHabits } = await supabase
-      .from("habits")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .order("created_at", { ascending: true });
-
     const todayStr = new Date().toISOString().split("T")[0];
 
-    const { data: todayHabitLogs } = await supabase
-      .from("habit_logs")
-      .select("habit_id")
-      .eq("user_id", user.id)
-      .eq("date", todayStr)
-      .eq("completed", true);
+    // Parallelize all 6 independent queries with specific column selection
+    const [
+      { data: profileData },
+      { data: dbHabits },
+      { data: todayHabitLogs },
+      { data: dbTasks },
+      { data: prayerLogs },
+      { data: todayFocus },
+    ] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, name, country, city, timezone, preferred_language")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("habits")
+        .select("id, name, icon, category, target_value, target_unit, prayer_anchor")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("habit_logs")
+        .select("habit_id")
+        .eq("user_id", user.id)
+        .eq("date", todayStr)
+        .eq("completed", true),
+      supabase
+        .from("tasks")
+        .select("id, title, subject_id, status, due_date, estimated_minutes, priority")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("prayer_logs")
+        .select("prayer")
+        .eq("user_id", user.id)
+        .eq("date", todayStr)
+        .eq("status", "completed"),
+      supabase
+        .from("focus_sessions")
+        .select("actual_minutes")
+        .eq("user_id", user.id)
+        .eq("status", "COMPLETED")
+        .gte("started_at", `${todayStr}T00:00:00.000Z`),
+    ]);
+
+    const profile = profileData as ProfileRow | null;
 
     const completedHabitIds = new Set((todayHabitLogs || []).map((l) => l.habit_id));
 
@@ -123,13 +147,6 @@ export async function getDashboardData(): Promise<DashboardData> {
           }))
         : [];
 
-    // Fetch user's real tasks
-    const { data: dbTasks } = await supabase
-      .from("tasks")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
     const userTasks: DashboardTask[] =
       dbTasks && dbTasks.length > 0
         ? dbTasks.map((t) => ({
@@ -143,23 +160,7 @@ export async function getDashboardData(): Promise<DashboardData> {
           }))
         : [];
 
-    // Fetch today's prayer logs
-    const { data: prayerLogs } = await supabase
-      .from("prayer_logs")
-      .select("prayer")
-      .eq("user_id", user.id)
-      .eq("date", todayStr)
-      .eq("status", "completed");
-
     const prayersCompleted = (prayerLogs || []).length;
-
-    // Fetch today's focus minutes
-    const { data: todayFocus } = await supabase
-      .from("focus_sessions")
-      .select("actual_minutes")
-      .eq("user_id", user.id)
-      .eq("status", "COMPLETED")
-      .gte("started_at", `${todayStr}T00:00:00.000Z`);
 
     const focusMinutesToday = (todayFocus || []).reduce(
       (sum, s) => sum + (s.actual_minutes || 0),
