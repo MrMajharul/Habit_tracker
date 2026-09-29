@@ -69,31 +69,42 @@ export const INITIAL_SUBJECTS: Subject[] = [
 ];
 
 export class SubjectService {
-  private getLocalSubjects(): Subject[] {
-    if (typeof window === "undefined") return INITIAL_SUBJECTS;
+  private getLocalSubjects(userId?: string): Subject[] {
+    if (typeof window === "undefined") {
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_SUBJECTS : [];
+    }
     try {
-      const raw = localStorage.getItem(SUBJECTS_STORE_KEY);
+      const key = userId ? `${SUBJECTS_STORE_KEY}_${userId}` : SUBJECTS_STORE_KEY;
+      const raw = localStorage.getItem(key);
       if (!raw) {
-        localStorage.setItem(SUBJECTS_STORE_KEY, JSON.stringify(INITIAL_SUBJECTS));
+        if (!isDevAuthBypass) {
+          return [];
+        }
+        localStorage.setItem(key, JSON.stringify(INITIAL_SUBJECTS));
         return INITIAL_SUBJECTS;
       }
       return JSON.parse(raw);
     } catch {
-      return INITIAL_SUBJECTS;
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_SUBJECTS : [];
     }
   }
 
-  private saveLocalSubjects(subjects: Subject[]): void {
+  private saveLocalSubjects(subjects: Subject[], userId?: string): void {
     if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(SUBJECTS_STORE_KEY, JSON.stringify(subjects));
+      const key = userId ? `${SUBJECTS_STORE_KEY}_${userId}` : SUBJECTS_STORE_KEY;
+      localStorage.setItem(key, JSON.stringify(subjects));
     } catch (e) {
       console.warn("Could not save subjects locally:", e);
     }
   }
 
   async getSubjects(options?: { includeArchived?: boolean }): Promise<Subject[]> {
-    if (!isSupabaseConfigured || isDevAuthBypass || typeof window === "undefined") {
+    if (typeof window === "undefined") {
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_SUBJECTS : [];
+    }
+
+    if (!isSupabaseConfigured || isDevAuthBypass) {
       const local = this.getLocalSubjects();
       return options?.includeArchived ? local : local.filter((s) => !s.isArchived);
     }
@@ -105,8 +116,7 @@ export class SubjectService {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        const local = this.getLocalSubjects();
-        return options?.includeArchived ? local : local.filter((s) => !s.isArchived);
+        return [];
       }
 
       let query = supabase
@@ -120,8 +130,15 @@ export class SubjectService {
       }
 
       const { data, error } = await query;
-      if (error || !data || data.length === 0) {
-        return this.getLocalSubjects();
+      if (error) {
+        console.warn("Failed to fetch subjects from Supabase:", error);
+        const local = this.getLocalSubjects(user.id);
+        return options?.includeArchived ? local : local.filter((s) => !s.isArchived);
+      }
+
+      if (!data || data.length === 0) {
+        this.saveLocalSubjects([], user.id);
+        return [];
       }
 
       const mapped: Subject[] = data.map((d) => ({
@@ -137,12 +154,11 @@ export class SubjectService {
         updatedAt: d.updated_at,
       }));
 
-      this.saveLocalSubjects(mapped);
+      this.saveLocalSubjects(mapped, user.id);
       return mapped;
     } catch (err) {
-      console.warn("Failed to fetch subjects from Supabase, returning local:", err);
-      const local = this.getLocalSubjects();
-      return options?.includeArchived ? local : local.filter((s) => !s.isArchived);
+      console.warn("Failed to fetch subjects from Supabase:", err);
+      return [];
     }
   }
 

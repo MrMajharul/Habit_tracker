@@ -41,10 +41,10 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-function collectLocalPrayerLogs(startDate: string, endDate: string): AnalyticsPrayerLog[] {
+function collectLocalPrayerLogs(startDate: string, endDate: string, userId?: string): AnalyticsPrayerLog[] {
   const logs: AnalyticsPrayerLog[] = [];
   for (const date of enumerateDates(startDate, endDate)) {
-    const day = getLocalPrayerLogs(date);
+    const day = getLocalPrayerLogs(date, userId);
     for (const prayer of PRAYER_NAMES) {
       if (day[prayer]) {
         logs.push({ prayer, date, status: "completed" });
@@ -54,8 +54,8 @@ function collectLocalPrayerLogs(startDate: string, endDate: string): AnalyticsPr
   return logs;
 }
 
-function collectLocalHabitLogs(): AnalyticsHabitLog[] {
-  const map = getLocalHabitLogs();
+function collectLocalHabitLogs(userId?: string): AnalyticsHabitLog[] {
+  const map = getLocalHabitLogs(userId);
   const logs: AnalyticsHabitLog[] = [];
   for (const [habitId, dates] of Object.entries(map)) {
     for (const date of dates) {
@@ -140,15 +140,15 @@ export function loadLocalSnapshot(options: {
     userId,
     timezone: options.timezone,
     generatedAt: now.toISOString(),
-    prayerLogs: collectLocalPrayerLogs(startDate, today),
-    habits: getLocalHabits().map((habit) => ({
+    prayerLogs: collectLocalPrayerLogs(startDate, today, options.userId),
+    habits: getLocalHabits(options.userId).map((habit) => ({
       id: habit.id,
       name: habit.name,
       isActive: habit.isActive,
       startDate: habit.startDate,
       frequency: habit.frequency,
     })),
-    habitLogs: collectLocalHabitLogs(),
+    habitLogs: collectLocalHabitLogs(options.userId),
     tasks: [],
     subjects: [],
     focusSessions: [],
@@ -392,16 +392,16 @@ export function mergeSnapshots(base: AnalyticsSnapshot, remote: Partial<Analytic
   if (!remote) return base;
   return {
     ...base,
-    prayerLogs: remote.prayerLogs?.length ? remote.prayerLogs : base.prayerLogs,
-    habits: remote.habits?.length ? remote.habits : base.habits,
-    habitLogs: remote.habitLogs?.length ? remote.habitLogs : base.habitLogs,
-    tasks: remote.tasks?.length ? remote.tasks : base.tasks,
-    subjects: remote.subjects?.length ? remote.subjects : base.subjects,
-    focusSessions: remote.focusSessions?.length ? remote.focusSessions : base.focusSessions,
-    quranSessions: remote.quranSessions?.length ? remote.quranSessions : base.quranSessions,
-    dhikrSessions: remote.dhikrSessions?.length ? remote.dhikrSessions : base.dhikrSessions,
-    productivityGoals: remote.productivityGoals?.length ? remote.productivityGoals : base.productivityGoals,
-    spiritualGoals: remote.spiritualGoals?.length ? remote.spiritualGoals : base.spiritualGoals,
-    reflections: remote.reflections?.length ? remote.reflections : base.reflections,
+    prayerLogs: remote.prayerLogs !== undefined ? remote.prayerLogs : base.prayerLogs,
+    habits: remote.habits !== undefined ? remote.habits : base.habits,
+    habitLogs: remote.habitLogs !== undefined ? remote.habitLogs : base.habitLogs,
+    tasks: remote.tasks !== undefined ? remote.tasks : base.tasks,
+    subjects: remote.subjects !== undefined ? remote.subjects : base.subjects,
+    focusSessions: remote.focusSessions !== undefined ? remote.focusSessions : base.focusSessions,
+    quranSessions: remote.quranSessions !== undefined ? remote.quranSessions : base.quranSessions,
+    dhikrSessions: remote.dhikrSessions !== undefined ? remote.dhikrSessions : base.dhikrSessions,
+    productivityGoals: remote.productivityGoals !== undefined ? remote.productivityGoals : base.productivityGoals,
+    spiritualGoals: remote.spiritualGoals !== undefined ? remote.spiritualGoals : base.spiritualGoals,
+    reflections: remote.reflections !== undefined ? remote.reflections : base.reflections,
   };
 }

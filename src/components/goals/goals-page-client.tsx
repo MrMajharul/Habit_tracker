@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { isDevAuthBypass } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -56,14 +57,17 @@ const GOALS_STORAGE_KEY = "istiqamaah_user_goals";
 const LEGACY_GOALS_STORAGE_KEY = "noorpath_user_goals";
 
 function getLocalGoals(): Goal[] {
-  if (typeof window === "undefined") return SEED_GOALS;
+  if (typeof window === "undefined") return [];
   try {
     const raw =
       localStorage.getItem(GOALS_STORAGE_KEY) ??
       localStorage.getItem(LEGACY_GOALS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : SEED_GOALS;
+    if (!raw) {
+      return isDevAuthBypass ? SEED_GOALS : [];
+    }
+    return JSON.parse(raw);
   } catch {
-    return SEED_GOALS;
+    return isDevAuthBypass ? SEED_GOALS : [];
   }
 }
 
@@ -265,7 +269,7 @@ function GoalCard({ goal, onIncrement, onDelete }: {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function GoalsPageClient() {
-  const [goals, setGoals] = useState<Goal[]>(SEED_GOALS);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [activeCategory, setActiveCategory] = useState<GoalCategory | "all">("all");
 
   useEffect(() => {

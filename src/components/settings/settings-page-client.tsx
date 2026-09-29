@@ -22,6 +22,7 @@ import { useTheme } from "next-themes";
 import * as React from "react";
 import { toast } from "sonner";
 import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
+import { clearUserLocalData } from "@/lib/cache/user-cache";
 
 import {
   PrayerSettingsDialog,
@@ -270,6 +271,7 @@ export function SettingsPageClient() {
   const handleSignOut = async () => {
     try {
       clearOfflineQueue();
+      clearUserLocalData();
       if (isSupabaseConfigured) {
         const supabase = createClient();
         await supabase.auth.signOut();

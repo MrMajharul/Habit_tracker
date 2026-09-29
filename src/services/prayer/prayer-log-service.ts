@@ -13,7 +13,10 @@ export function getTodayDateString(d = new Date()): string {
   return format(d, "yyyy-MM-dd");
 }
 
-export function getLocalPrayerLogs(dateStr = getTodayDateString()): Record<PrayerName, boolean> {
+export function getLocalPrayerLogs(
+  dateStr = getTodayDateString(),
+  userId?: string,
+): Record<PrayerName, boolean> {
   const fallback: Record<PrayerName, boolean> = {
     fajr: false,
     dhuhr: false,
@@ -25,9 +28,12 @@ export function getLocalPrayerLogs(dateStr = getTodayDateString()): Record<Praye
   if (typeof window === "undefined") return fallback;
 
   try {
+    const key = userId
+      ? `${PRAYER_LOGS_PREFIX}${userId}_${dateStr}`
+      : `${PRAYER_LOGS_PREFIX}${dateStr}`;
     const raw =
-      localStorage.getItem(`${PRAYER_LOGS_PREFIX}${dateStr}`) ??
-      localStorage.getItem(`${LEGACY_PRAYER_LOGS_PREFIX}${dateStr}`);
+      localStorage.getItem(key) ??
+      (!userId ? localStorage.getItem(`${LEGACY_PRAYER_LOGS_PREFIX}${dateStr}`) : null);
     if (!raw) return fallback;
     return { ...fallback, ...JSON.parse(raw) };
   } catch {
@@ -38,10 +44,14 @@ export function getLocalPrayerLogs(dateStr = getTodayDateString()): Record<Praye
 export function setLocalPrayerLogs(
   dateStr: string,
   logs: Record<PrayerName, boolean>,
+  userId?: string,
 ): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(`${PRAYER_LOGS_PREFIX}${dateStr}`, JSON.stringify(logs));
+    const key = userId
+      ? `${PRAYER_LOGS_PREFIX}${userId}_${dateStr}`
+      : `${PRAYER_LOGS_PREFIX}${dateStr}`;
+    localStorage.setItem(key, JSON.stringify(logs));
   } catch {
     // Ignore storage quota
   }
@@ -70,15 +80,23 @@ export async function fetchPrayerLogs(
       .eq("user_id", user.id)
       .eq("date", dateStr);
 
-    if (error || !data) return local;
+    if (error || !data) return getLocalPrayerLogs(dateStr, user.id);
 
-    const remoteLogs = { ...local };
+    const remoteLogs: Record<PrayerName, boolean> = {
+      fajr: false,
+      dhuhr: false,
+      asr: false,
+      maghrib: false,
+      isha: false,
+    };
     for (const row of data) {
       const p = row.prayer as PrayerName;
-      remoteLogs[p] = row.status === "completed";
+      if (p in remoteLogs) {
+        remoteLogs[p] = row.status === "completed";
+      }
     }
 
-    setLocalPrayerLogs(dateStr, remoteLogs);
+    setLocalPrayerLogs(dateStr, remoteLogs, user.id);
     return remoteLogs;
   } catch {
     return local;
@@ -90,10 +108,23 @@ export async function togglePrayerCompletion(
   completed: boolean,
   dateStr = getTodayDateString(),
 ): Promise<void> {
+  let userId: string | undefined;
+  if (isSupabaseConfigured && !isDevAuthBypass && typeof window !== "undefined") {
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) userId = user.id;
+    } catch {
+      // Ignore
+    }
+  }
+
   // 1. Optimistic Local Save
-  const current = getLocalPrayerLogs(dateStr);
+  const current = getLocalPrayerLogs(dateStr, userId);
   current[prayer] = completed;
-  setLocalPrayerLogs(dateStr, current);
+  setLocalPrayerLogs(dateStr, current, userId);
 
   // 2. Offline check
   if (typeof navigator !== "undefined" && !navigator.onLine) {

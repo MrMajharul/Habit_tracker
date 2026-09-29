@@ -48,8 +48,8 @@ interface TodaysTasksProps {
 export function TodaysTasks({
   tasks: initialTasks,
   isMockData,
-  focusMinutesToday = 70,
-  completedSessionsToday = 2,
+  focusMinutesToday = 0,
+  completedSessionsToday = 0,
   onAddTask,
 }: TodaysTasksProps) {
   const [tasks, setTasks] = useState<DashboardTask[]>(initialTasks);

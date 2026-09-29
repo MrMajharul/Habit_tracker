@@ -59,27 +59,34 @@ export const INITIAL_FOCUS_SESSIONS: FocusSession[] = [
 ];
 
 export class FocusService {
-  private getLocalSessions(): FocusSession[] {
-    if (typeof window === "undefined") return INITIAL_FOCUS_SESSIONS;
+  private getLocalSessions(userId?: string): FocusSession[] {
+    if (typeof window === "undefined") {
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_FOCUS_SESSIONS : [];
+    }
     try {
-      const raw = localStorage.getItem(FOCUS_SESSIONS_STORE_KEY);
+      const key = userId ? `${FOCUS_SESSIONS_STORE_KEY}_${userId}` : FOCUS_SESSIONS_STORE_KEY;
+      const raw = localStorage.getItem(key);
       if (!raw) {
+        if (!isDevAuthBypass) {
+          return [];
+        }
         localStorage.setItem(
-          FOCUS_SESSIONS_STORE_KEY,
+          key,
           JSON.stringify(INITIAL_FOCUS_SESSIONS),
         );
         return INITIAL_FOCUS_SESSIONS;
       }
       return JSON.parse(raw);
     } catch {
-      return INITIAL_FOCUS_SESSIONS;
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_FOCUS_SESSIONS : [];
     }
   }
 
-  private saveLocalSessions(sessions: FocusSession[]): void {
+  private saveLocalSessions(sessions: FocusSession[], userId?: string): void {
     if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(FOCUS_SESSIONS_STORE_KEY, JSON.stringify(sessions));
+      const key = userId ? `${FOCUS_SESSIONS_STORE_KEY}_${userId}` : FOCUS_SESSIONS_STORE_KEY;
+      localStorage.setItem(key, JSON.stringify(sessions));
     } catch (e) {
       console.warn("Could not save focus sessions locally:", e);
     }
@@ -92,7 +99,9 @@ export class FocusService {
   }): Promise<FocusSession[]> {
     let sessions: FocusSession[] = [];
 
-    if (!isSupabaseConfigured || isDevAuthBypass || typeof window === "undefined") {
+    if (typeof window === "undefined") {
+      sessions = !isSupabaseConfigured || isDevAuthBypass ? INITIAL_FOCUS_SESSIONS : [];
+    } else if (!isSupabaseConfigured || isDevAuthBypass) {
       sessions = this.getLocalSessions();
     } else {
       try {
@@ -102,7 +111,7 @@ export class FocusService {
         } = await supabase.auth.getUser();
 
         if (!user) {
-          sessions = this.getLocalSessions();
+          sessions = [];
         } else {
           let query = supabase
             .from("focus_sessions")
@@ -121,8 +130,12 @@ export class FocusService {
           }
 
           const { data, error } = await query;
-          if (error || !data || data.length === 0) {
-            sessions = this.getLocalSessions();
+          if (error) {
+            console.warn("Failed to fetch focus sessions from Supabase:", error);
+            sessions = this.getLocalSessions(user.id);
+          } else if (!data || data.length === 0) {
+            sessions = [];
+            this.saveLocalSessions([], user.id);
           } else {
             sessions = data.map((d) => ({
               id: d.id,
@@ -136,12 +149,12 @@ export class FocusService {
               status: (d.status as FocusSessionStatus) || "COMPLETED",
               createdAt: d.created_at,
             }));
-            this.saveLocalSessions(sessions);
+            this.saveLocalSessions(sessions, user.id);
           }
         }
       } catch (err) {
-        console.warn("Failed to fetch focus sessions from Supabase, returning local:", err);
-        sessions = this.getLocalSessions();
+        console.warn("Failed to fetch focus sessions from Supabase:", err);
+        sessions = [];
       }
     }
 
@@ -293,6 +306,17 @@ export class FocusService {
         color: sub.color,
         targetMinutes: sub.weeklyTargetMinutes,
       };
+    }
+
+    for (const s of weekSessions) {
+      if (s.subjectId && s.status === "COMPLETED" && !subjectWiseFocusMinutes[s.subjectId]) {
+        subjectWiseFocusMinutes[s.subjectId] = {
+          name: "Subject",
+          minutes: s.actualMinutes,
+          color: "#10b981",
+          targetMinutes: 120,
+        };
+      }
     }
 
     // Total weekly target minutes across all subjects

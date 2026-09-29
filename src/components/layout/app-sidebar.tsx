@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { AppLogo } from "@/components/ui/app-logo";
+import { clearUserLocalData } from "@/lib/cache/user-cache";
 import { isSupabaseConfigured } from "@/lib/constants";
 import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +20,7 @@ export function AppSidebar() {
   const handleSignOut = async () => {
     try {
       clearOfflineQueue();
+      clearUserLocalData();
       if (isSupabaseConfigured) {
         const supabase = createClient();
         await supabase.auth.signOut();

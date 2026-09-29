@@ -70,7 +70,12 @@ async function DashboardContent() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <TodaysHabits habits={dashboard.habits} isMockData={dashboard.isMockData} />
-        <TodaysTasks tasks={dashboard.tasks} isMockData={dashboard.isMockData} />
+        <TodaysTasks
+          tasks={dashboard.tasks}
+          isMockData={dashboard.isMockData}
+          focusMinutesToday={dashboard.progress.focusMinutesToday}
+          completedSessionsToday={Math.floor(dashboard.progress.focusMinutesToday / 25)}
+        />
       </div>
     </div>
   );

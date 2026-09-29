@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
+import { clearUserLocalData } from "@/lib/cache/user-cache";
 import {
   registerSchema,
   type RegisterFormValues,
@@ -62,6 +63,7 @@ export function RegisterForm() {
       }
 
       if (data.user) {
+        clearUserLocalData();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from("profiles") as any).upsert({
           id: data.user.id,
@@ -90,6 +92,7 @@ export function RegisterForm() {
     }
 
     try {
+      clearUserLocalData();
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",

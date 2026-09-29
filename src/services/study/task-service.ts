@@ -94,24 +94,31 @@ export const INITIAL_TASKS: Task[] = [
 ];
 
 export class TaskService {
-  private getLocalTasks(): Task[] {
-    if (typeof window === "undefined") return INITIAL_TASKS;
+  private getLocalTasks(userId?: string): Task[] {
+    if (typeof window === "undefined") {
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_TASKS : [];
+    }
     try {
-      const raw = localStorage.getItem(TASKS_STORE_KEY);
+      const key = userId ? `${TASKS_STORE_KEY}_${userId}` : TASKS_STORE_KEY;
+      const raw = localStorage.getItem(key);
       if (!raw) {
-        localStorage.setItem(TASKS_STORE_KEY, JSON.stringify(INITIAL_TASKS));
+        if (!isDevAuthBypass) {
+          return [];
+        }
+        localStorage.setItem(key, JSON.stringify(INITIAL_TASKS));
         return INITIAL_TASKS;
       }
       return JSON.parse(raw);
     } catch {
-      return INITIAL_TASKS;
+      return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_TASKS : [];
     }
   }
 
-  private saveLocalTasks(tasks: Task[]): void {
+  private saveLocalTasks(tasks: Task[], userId?: string): void {
     if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(TASKS_STORE_KEY, JSON.stringify(tasks));
+      const key = userId ? `${TASKS_STORE_KEY}_${userId}` : TASKS_STORE_KEY;
+      localStorage.setItem(key, JSON.stringify(tasks));
     } catch (e) {
       console.warn("Could not save tasks locally:", e);
     }
@@ -146,7 +153,9 @@ export class TaskService {
   async getTasks(filters?: TaskFilterOptions): Promise<Task[]> {
     let tasks: Task[] = [];
 
-    if (!isSupabaseConfigured || isDevAuthBypass || typeof window === "undefined") {
+    if (typeof window === "undefined") {
+      tasks = !isSupabaseConfigured || isDevAuthBypass ? INITIAL_TASKS : [];
+    } else if (!isSupabaseConfigured || isDevAuthBypass) {
       tasks = this.getLocalTasks();
     } else {
       try {
@@ -156,7 +165,7 @@ export class TaskService {
         } = await supabase.auth.getUser();
 
         if (!user) {
-          tasks = this.getLocalTasks();
+          tasks = [];
         } else {
           const { data, error } = await supabase
             .from("tasks")
@@ -164,8 +173,12 @@ export class TaskService {
             .eq("user_id", user.id)
             .order("created_at", { ascending: false });
 
-          if (error || !data || data.length === 0) {
-            tasks = this.getLocalTasks();
+          if (error) {
+            console.warn("Failed to fetch tasks from Supabase:", error);
+            tasks = this.getLocalTasks(user.id);
+          } else if (!data || data.length === 0) {
+            tasks = [];
+            this.saveLocalTasks([], user.id);
           } else {
             tasks = data.map((d) => ({
               id: d.id,
@@ -181,12 +194,12 @@ export class TaskService {
               createdAt: d.created_at,
               updatedAt: d.updated_at,
             }));
-            this.saveLocalTasks(tasks);
+            this.saveLocalTasks(tasks, user.id);
           }
         }
       } catch (err) {
-        console.warn("Failed to fetch tasks from Supabase, returning local:", err);
-        tasks = this.getLocalTasks();
+        console.warn("Failed to fetch tasks from Supabase:", err);
+        tasks = [];
       }
     }
 

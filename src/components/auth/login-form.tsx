@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
+import { clearUserLocalData } from "@/lib/cache/user-cache";
 import {
   loginSchema,
   type LoginFormValues,
@@ -69,6 +70,7 @@ export function LoginForm() {
         return;
       }
 
+      clearUserLocalData();
       toast.success("Welcome back");
       router.push("/dashboard");
       router.refresh();
@@ -86,6 +88,7 @@ export function LoginForm() {
     }
 
     try {
+      clearUserLocalData();
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",

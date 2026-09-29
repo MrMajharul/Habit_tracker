@@ -59,10 +59,26 @@ export async function getDashboardData(): Promise<DashboardData> {
 
     if (!user) {
       return {
-        profile: MOCK_PROFILE,
-        habits: initialDashboardHabits,
-        tasks: MOCK_TASKS,
-        progress: defaultProgress,
+        profile: {
+          id: "anonymous",
+          name: "Muslim",
+          email: "",
+          country: undefined,
+          city: undefined,
+          timezone: "Asia/Dhaka",
+          preferredLanguage: "en",
+        },
+        habits: [],
+        tasks: [],
+        progress: {
+          habitsCompleted: 0,
+          habitsTotal: 0,
+          tasksCompleted: 0,
+          tasksTotal: 0,
+          prayersCompleted: 0,
+          prayersTotal: 5,
+          focusMinutesToday: 0,
+        },
         isMockData: false,
       };
     }
@@ -80,7 +96,19 @@ export async function getDashboardData(): Promise<DashboardData> {
       .from("habits")
       .select("*")
       .eq("user_id", user.id)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .order("created_at", { ascending: true });
+
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    const { data: todayHabitLogs } = await supabase
+      .from("habit_logs")
+      .select("habit_id")
+      .eq("user_id", user.id)
+      .eq("date", todayStr)
+      .eq("completed", true);
+
+    const completedHabitIds = new Set((todayHabitLogs || []).map((l) => l.habit_id));
 
     const userHabits: DashboardHabit[] =
       dbHabits && dbHabits.length > 0
@@ -89,11 +117,54 @@ export async function getDashboardData(): Promise<DashboardData> {
             name: h.name,
             icon: h.icon,
             category: (h.category as DashboardHabit["category"]) || "personal",
-            completed: false,
+            completed: completedHabitIds.has(h.id),
             target: h.target_value ? `${h.target_value} ${h.target_unit || ""}`.trim() : undefined,
             prayerAnchor: (h.prayer_anchor as DashboardHabit["prayerAnchor"]) || "none",
           }))
-        : initialDashboardHabits;
+        : [];
+
+    // Fetch user's real tasks
+    const { data: dbTasks } = await supabase
+      .from("tasks")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    const userTasks: DashboardTask[] =
+      dbTasks && dbTasks.length > 0
+        ? dbTasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            subject: t.subject_id || undefined,
+            status: (t.status?.toLowerCase() === "completed" ? "completed" : "todo") as DashboardTask["status"],
+            dueDate: t.due_date || undefined,
+            estimatedMinutes: t.estimated_minutes ?? undefined,
+            priority: (t.priority?.toLowerCase() as DashboardTask["priority"]) || "medium",
+          }))
+        : [];
+
+    // Fetch today's prayer logs
+    const { data: prayerLogs } = await supabase
+      .from("prayer_logs")
+      .select("prayer")
+      .eq("user_id", user.id)
+      .eq("date", todayStr)
+      .eq("status", "completed");
+
+    const prayersCompleted = (prayerLogs || []).length;
+
+    // Fetch today's focus minutes
+    const { data: todayFocus } = await supabase
+      .from("focus_sessions")
+      .select("actual_minutes")
+      .eq("user_id", user.id)
+      .eq("status", "COMPLETED")
+      .gte("started_at", `${todayStr}T00:00:00.000Z`);
+
+    const focusMinutesToday = (todayFocus || []).reduce(
+      (sum, s) => sum + (s.actual_minutes || 0),
+      0,
+    );
 
     return {
       profile: {
@@ -111,21 +182,41 @@ export async function getDashboardData(): Promise<DashboardData> {
         preferredLanguage: (profile?.preferred_language as "en" | "bn") ?? "en",
       },
       habits: userHabits,
-      tasks: MOCK_TASKS,
+      tasks: userTasks,
       progress: {
-        ...defaultProgress,
         habitsTotal: userHabits.length,
         habitsCompleted: userHabits.filter((h) => h.completed).length,
+        tasksTotal: userTasks.length,
+        tasksCompleted: userTasks.filter((t) => t.status === "completed").length,
+        prayersTotal: 5,
+        prayersCompleted,
+        focusMinutesToday,
       },
       isMockData: false,
     };
   } catch (err) {
     console.warn("Failed to load server dashboard data, returning offline state:", err);
     return {
-      profile: MOCK_PROFILE,
-      habits: initialDashboardHabits,
-      tasks: MOCK_TASKS,
-      progress: defaultProgress,
+      profile: {
+        id: "offline",
+        name: "Muslim",
+        email: "",
+        country: undefined,
+        city: undefined,
+        timezone: "Asia/Dhaka",
+        preferredLanguage: "en",
+      },
+      habits: [],
+      tasks: [],
+      progress: {
+        habitsCompleted: 0,
+        habitsTotal: 0,
+        tasksCompleted: 0,
+        tasksTotal: 0,
+        prayersCompleted: 0,
+        prayersTotal: 5,
+        focusMinutesToday: 0,
+      },
       isMockData: false,
     };
   }

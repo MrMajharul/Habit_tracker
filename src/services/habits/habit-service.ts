@@ -136,54 +136,66 @@ export const INITIAL_HABITS: Habit[] = [
   },
 ];
 
-export function getLocalHabits(): Habit[] {
-  if (typeof window === "undefined") return INITIAL_HABITS;
+export function getLocalHabits(userId?: string): Habit[] {
+  if (typeof window === "undefined") {
+    return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_HABITS : [];
+  }
   try {
+    const key = userId ? `${HABITS_STORE_KEY}_${userId}` : HABITS_STORE_KEY;
     const raw =
-      localStorage.getItem(HABITS_STORE_KEY) ??
+      localStorage.getItem(key) ??
       localStorage.getItem(LEGACY_HABITS_STORE_KEY);
     if (!raw) {
-      localStorage.setItem(HABITS_STORE_KEY, JSON.stringify(INITIAL_HABITS));
+      if (!isDevAuthBypass) {
+        return [];
+      }
+      localStorage.setItem(key, JSON.stringify(INITIAL_HABITS));
       return INITIAL_HABITS;
     }
     return JSON.parse(raw);
   } catch {
-    return INITIAL_HABITS;
+    return !isSupabaseConfigured || isDevAuthBypass ? INITIAL_HABITS : [];
   }
 }
 
-export function saveLocalHabits(habits: Habit[]): void {
+export function saveLocalHabits(habits: Habit[], userId?: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(HABITS_STORE_KEY, JSON.stringify(habits));
+    const key = userId ? `${HABITS_STORE_KEY}_${userId}` : HABITS_STORE_KEY;
+    localStorage.setItem(key, JSON.stringify(habits));
   } catch {
     // Ignore quota errors
   }
 }
 
-export function getLocalHabitLogs(): Record<string, string[]> {
+export function getLocalHabitLogs(userId?: string): Record<string, string[]> {
   if (typeof window === "undefined") {
-    return generateInitialSeedLogs();
+    return !isSupabaseConfigured || isDevAuthBypass ? generateInitialSeedLogs() : {};
   }
   try {
+    const key = userId ? `${HABIT_LOGS_STORE_KEY}_${userId}` : HABIT_LOGS_STORE_KEY;
     const raw =
-      localStorage.getItem(HABIT_LOGS_STORE_KEY) ??
+      localStorage.getItem(key) ??
       localStorage.getItem(LEGACY_HABIT_LOGS_STORE_KEY);
     if (!raw) {
-      const initial = generateInitialSeedLogs();
-      localStorage.setItem(HABIT_LOGS_STORE_KEY, JSON.stringify(initial));
-      return initial;
+      if (!isSupabaseConfigured || isDevAuthBypass) {
+        const initial = generateInitialSeedLogs();
+        localStorage.setItem(key, JSON.stringify(initial));
+        return initial;
+      }
+      return {};
     }
     return JSON.parse(raw);
   } catch {
-    return generateInitialSeedLogs();
+    return !isSupabaseConfigured || isDevAuthBypass ? generateInitialSeedLogs() : {};
   }
 }
 
-export function saveLocalHabitLogs(logs: Record<string, string[]>): void {
+export function saveLocalHabitLogs(logs: Record<string, string[]>, userId?: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(HABIT_LOGS_STORE_KEY, JSON.stringify(logs));
+    const key = userId ? `${HABIT_LOGS_STORE_KEY}_${userId}` : HABIT_LOGS_STORE_KEY;
+    localStorage.setItem(key, JSON.stringify(logs));
   } catch {
     // Ignore quota errors
   }
@@ -217,7 +229,7 @@ export async function fetchHabitsWithStatus(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return localHabits.filter((h) => h.isActive);
+      return [];
     }
 
     const { data: dbHabits, error: habitsError } = await supabase
@@ -227,8 +239,13 @@ export async function fetchHabitsWithStatus(
       .eq("is_active", true)
       .order("created_at", { ascending: true });
 
-    if (habitsError || !dbHabits || dbHabits.length === 0) {
-      return localHabits.filter((h) => h.isActive);
+    if (habitsError) {
+      console.warn("Failed to fetch habits from Supabase:", habitsError);
+      return [];
+    }
+
+    if (!dbHabits || dbHabits.length === 0) {
+      return [];
     }
 
     // Fetch all logs for this user to compute streaks

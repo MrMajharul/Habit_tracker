@@ -1,3 +1,5 @@
+import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
 import { addCalendarDays, formatInstantInTimeZone, resolveAnalyticsPeriod } from "./analytics-period";
 import { aggregateAnalytics } from "./analytics-aggregator";
 import {
@@ -70,10 +72,25 @@ export async function loadAnalyticsSummary(options: LoadAnalyticsOptions): Promi
     };
   }
 
+  let userId = options.userId;
+  if (!userId && isSupabaseConfigured && !isDevAuthBypass && typeof window !== "undefined") {
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
   const now = options.now ?? new Date();
   const online = typeof navigator === "undefined" ? true : navigator.onLine;
   const local = loadLocalSnapshot({
-    userId: options.userId,
+    userId,
     timezone: options.timezone,
     now,
   });
@@ -89,9 +106,9 @@ export async function loadAnalyticsSummary(options: LoadAnalyticsOptions): Promi
   }
 
   const today = formatInstantInTimeZone(now, options.timezone);
-  const remote = options.userId
+  const remote = userId
     ? await fetchRemoteSnapshot({
-        userId: options.userId,
+        userId,
         timezone: options.timezone,
         startDate: addCalendarDays(today, -365),
         endDate: today,
