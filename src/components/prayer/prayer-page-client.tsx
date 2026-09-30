@@ -17,6 +17,7 @@ import {
 } from "@/components/prayer/prayer-settings-dialog";
 import {
   getPrayerDaySummary,
+  isPrayerAvailable,
   type PrayerDaySummary,
   type PrayerName,
 } from "@/services/prayer";
@@ -64,16 +65,6 @@ const METHOD_LABELS: Record<string, string> = {
   moonsighting: "Moonsighting Committee Worldwide",
 };
 
-/**
- * Returns which prayer's time window we're in, based on the current time.
- * A prayer is "available" once its start time has passed.
- * The prayer order defines implicit end times (next prayer's start).
- */
-function isPrayerAvailable(prayerName: PrayerName, allPrayers: PrayerDaySummary["prayers"], now: Date): boolean {
-  const prayer = allPrayers.find((p) => p.name === prayerName);
-  if (!prayer) return false;
-  return now.getTime() >= prayer.time.getTime();
-}
 
 function PrayerCountdownBadge({ time }: { time: Date }) {
   const countdown = usePrayerCountdown(time);

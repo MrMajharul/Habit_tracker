@@ -35,5 +35,16 @@ export async function getPrayerDaySummary(
   }
 }
 
+export function isPrayerAvailable(
+  prayerName: PrayerName,
+  allPrayers: PrayerDaySummary["prayers"],
+  now: Date = new Date(),
+): boolean {
+  const prayer = allPrayers.find((p) => p.name === prayerName);
+  if (!prayer) return false;
+  const prayerTime = prayer.time instanceof Date ? prayer.time : new Date(prayer.time);
+  return now.getTime() >= prayerTime.getTime();
+}
+
 export { AdhanPrayerProvider, MockPrayerProvider };
 export type { PrayerDaySummary, PrayerName, PrayerSettings, PrayerTime } from "./types";

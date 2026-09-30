@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { usePrayerCountdown } from "@/hooks/use-prayer-countdown";
 import { formatPrayerTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import type { PrayerDaySummary, PrayerName } from "@/services/prayer";
+import { isPrayerAvailable, type PrayerDaySummary, type PrayerName } from "@/services/prayer";
 import {
   fetchPrayerLogs,
   togglePrayerCompletion,
@@ -37,6 +37,7 @@ function PrayerCountdownDisplay({ target }: { target: Date | null }) {
 }
 
 export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
+  const [now, setNow] = useState(() => new Date());
   const [completedMap, setCompletedMap] = useState<Record<PrayerName, boolean>>(() => {
     const init: Record<PrayerName, boolean> = {
       fajr: false,
@@ -50,6 +51,12 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
     });
     return init;
   });
+
+  // Keep now updated so prayer availability updates in real time
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Sync with persistent logs on client mount
   useEffect(() => {
@@ -69,6 +76,18 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
 
   const handleTogglePrayer = async (prayer: PrayerName, label: string) => {
     const nextState = !completedMap[prayer];
+
+    // Timing validation: prevent marking as complete before prayer time begins
+    if (nextState && !isPrayerAvailable(prayer, summary.prayers, now)) {
+      const prayerInfo = summary.prayers.find((p) => p.name === prayer);
+      toast.warning(`${label} hasn't started yet`, {
+        description: prayerInfo
+          ? `Available at ${formatPrayerTime(prayerInfo.time)}`
+          : "Please wait for the prayer time to begin.",
+      });
+      return;
+    }
+
     setCompletedMap((prev) => ({ ...prev, [prayer]: nextState }));
 
     if (nextState) {
@@ -149,19 +168,25 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
               summary.nextPrayer?.name === prayer.name &&
               isSameDay(summary.nextPrayer.time, prayer.time) &&
               !isCompleted;
+            const available = isPrayerAvailable(prayer.name, summary.prayers, now);
+            const canMark = available || isCompleted;
 
             return (
               <button
                 key={prayer.name}
                 type="button"
                 onClick={() => handleTogglePrayer(prayer.name, prayer.label)}
+                disabled={!canMark}
+                aria-label={`Toggle ${prayer.label}`}
                 className={cn(
-                  "flex flex-col items-center justify-between rounded-xl border p-2.5 text-center transition-all cursor-pointer text-left",
+                  "flex flex-col items-center justify-between rounded-xl border p-2.5 text-center transition-all text-left",
                   isCompleted
-                    ? "border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-500/15"
+                    ? "border-emerald-500/40 bg-emerald-500/10 dark:bg-emerald-500/15 cursor-pointer"
                     : isNext
-                      ? "border-primary/40 bg-primary/5 shadow-xs"
-                      : "border-border/70 bg-muted/20 hover:border-emerald-500/30 hover:bg-muted/40",
+                      ? "border-primary/40 bg-primary/5 shadow-xs cursor-pointer"
+                      : !available
+                        ? "border-border/40 bg-muted/10 opacity-60 cursor-not-allowed"
+                        : "border-border/70 bg-muted/20 hover:border-emerald-500/30 hover:bg-muted/40 cursor-pointer",
                 )}
               >
                 <div className="flex w-full items-center justify-between text-[11px]">
@@ -171,7 +196,9 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
                       "flex size-4 items-center justify-center rounded-full text-[10px]",
                       isCompleted
                         ? "bg-emerald-600 text-white"
-                        : "border border-muted-foreground/40 text-muted-foreground",
+                        : !available
+                          ? "border border-muted-foreground/20 text-muted-foreground/40"
+                          : "border border-muted-foreground/40 text-muted-foreground",
                     )}
                   >
                     {isCompleted ? <Check className="size-2.5" /> : null}
@@ -193,6 +220,8 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
                       <Clock className="size-2.5" />
                       Next
                     </span>
+                  ) : !available ? (
+                    <span className="text-muted-foreground/50">Not yet</span>
                   ) : (
                     <span className="text-muted-foreground/70">Tap to log</span>
                   )}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { AdhanPrayerProvider } from "@/services/prayer/adhan-prayer-provider";
+import { isPrayerAvailable } from "@/services/prayer";
 import type { PrayerSettings } from "@/services/prayer/types";
 
 describe("AdhanPrayerProvider - Live Prayer Calculation", () => {
@@ -108,5 +109,32 @@ describe("AdhanPrayerProvider - Live Prayer Calculation", () => {
 
     // Next prayer should either be one of today's upcoming prayers or tomorrow's Fajr
     expect(["fajr", "dhuhr", "asr", "maghrib", "isha"]).toContain(summary.nextPrayer?.name);
+  });
+});
+
+describe("isPrayerAvailable timing validation", () => {
+  const baseTime = new Date("2026-09-30T12:00:00Z");
+  const prayers = [
+    { name: "fajr" as const, label: "Fajr", time: new Date("2026-09-30T04:30:00Z"), completed: false, notificationsEnabled: false },
+    { name: "dhuhr" as const, label: "Dhuhr", time: new Date("2026-09-30T12:00:00Z"), completed: false, notificationsEnabled: false },
+    { name: "asr" as const, label: "Asr", time: new Date("2026-09-30T15:30:00Z"), completed: false, notificationsEnabled: false },
+    { name: "maghrib" as const, label: "Maghrib", time: new Date("2026-09-30T18:00:00Z"), completed: false, notificationsEnabled: false },
+    { name: "isha" as const, label: "Isha", time: new Date("2026-09-30T19:30:00Z"), completed: false, notificationsEnabled: false },
+  ];
+
+  it("returns true for prayers whose time has already arrived", () => {
+    // Fajr is at 04:30, current time is 12:00 -> available
+    expect(isPrayerAvailable("fajr", prayers, baseTime)).toBe(true);
+    // Dhuhr is at 12:00, current time is 12:00 -> available
+    expect(isPrayerAvailable("dhuhr", prayers, baseTime)).toBe(true);
+  });
+
+  it("returns false for prayers whose time is in the future", () => {
+    // Asr is at 15:30, current time is 12:00 -> NOT available
+    expect(isPrayerAvailable("asr", prayers, baseTime)).toBe(false);
+    // Maghrib is at 18:00 -> NOT available
+    expect(isPrayerAvailable("maghrib", prayers, baseTime)).toBe(false);
+    // Isha is at 19:30 -> NOT available
+    expect(isPrayerAvailable("isha", prayers, baseTime)).toBe(false);
   });
 });

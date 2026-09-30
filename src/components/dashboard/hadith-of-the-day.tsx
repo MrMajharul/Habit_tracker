@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { HadithRecord } from "@/services/hadith/types";
 
 interface HadithOfTheDayProps {
@@ -100,16 +101,19 @@ export function HadithOfTheDay({ hadith, compact = false }: HadithOfTheDayProps)
         </CardAction>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {!compact && (
+      <CardContent className={cn("space-y-4", compact && "space-y-3")}>
+        {hadith.arabicText ? (
           <p
-            className="text-right font-serif text-lg leading-loose text-muted-foreground"
+            className={cn(
+              "text-right font-serif text-muted-foreground",
+              compact ? "text-base leading-relaxed" : "text-lg leading-loose"
+            )}
             dir="rtl"
             lang="ar"
           >
             {hadith.arabicText}
           </p>
-        )}
+        ) : null}
 
         <blockquote className="border-l-2 border-gold/40 pl-4 text-sm leading-relaxed sm:text-base">
           &ldquo;{hadith.englishTranslation}&rdquo;
@@ -120,7 +124,7 @@ export function HadithOfTheDay({ hadith, compact = false }: HadithOfTheDayProps)
           {hadith.topic ? ` · ${hadith.topic}` : ""}
         </footer>
 
-        {!compact && hadith.banglaTranslation ? (
+        {hadith.banglaTranslation ? (
           <p className="text-sm leading-relaxed text-muted-foreground" lang="bn">
             {hadith.banglaTranslation}
           </p>
