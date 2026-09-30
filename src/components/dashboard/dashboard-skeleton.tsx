@@ -19,7 +19,7 @@ export function DashboardSkeleton() {
             <CardContent className="space-y-4">
               <Skeleton className="h-24 w-full rounded-2xl" />
               <Skeleton className="h-2 w-full" />
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-16 rounded-xl" />
                 ))}

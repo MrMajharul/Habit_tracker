@@ -207,7 +207,7 @@ export function AddHabitDialog({
               <p className="text-[10px] text-muted-foreground">
                 Tie this habit directly to a prayer to build natural consistency.
               </p>
-              <div className="grid grid-cols-3 gap-1 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
                 {[
                   { value: "none", label: "No anchor" },
                   { value: "fajr", label: "After Fajr" },

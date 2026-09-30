@@ -367,14 +367,14 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                 !available && !isCompleted && "opacity-60",
               )}
             >
-              <CardContent className="flex items-center gap-4 py-3.5">
+              <CardContent className="flex items-center gap-2 sm:gap-4 py-3 sm:py-3.5 px-3 sm:px-6">
                 <button
                   type="button"
                   onClick={() => handleTogglePrayer(prayer.name)}
                   disabled={!canMark}
                   aria-label={`Toggle ${prayer.label}`}
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+                    "flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-full border-2 transition-all",
                     isCompleted
                       ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500 cursor-pointer"
                       : canMark
@@ -390,7 +390,7 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                 </button>
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <p className="font-semibold text-sm">{prayer.label}</p>
                     {isNext && (
                       <Badge variant="outline" className="border-primary/40 text-[10px] text-primary">
@@ -403,13 +403,13 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground line-clamp-1 sm:line-clamp-none">
                     {PRAYER_DESCRIPTIONS[prayer.label]}
                   </p>
                 </div>
 
-                <div className="flex flex-col items-end gap-1">
-                  <p className="text-sm font-semibold tabular-nums">
+                <div className="flex flex-col items-end gap-0.5 sm:gap-1 shrink-0">
+                  <p className="text-xs sm:text-sm font-semibold tabular-nums">
                     {formatPrayerTime(prayer.time)}
                   </p>
                   <div className="flex items-center gap-1">
@@ -437,7 +437,7 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
                   variant={isCompleted ? "secondary" : "outline"}
                   disabled={!canMark}
                   className={cn(
-                    "shrink-0 h-8 text-xs",
+                    "shrink-0 h-7.5 px-2 text-[11px] sm:h-8 sm:px-3 sm:text-xs",
                     isCompleted &&
                       "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/20 dark:text-emerald-100",
                   )}

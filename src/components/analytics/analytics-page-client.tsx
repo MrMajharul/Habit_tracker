@@ -440,7 +440,7 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Per-Prayer Completion Breakdown */}
-                  <div className="grid gap-3 sm:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-5">
                     {summary.prayer.perPrayer.map((item) => (
                       <div
                         key={item.prayer}

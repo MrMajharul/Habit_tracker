@@ -284,7 +284,7 @@ function SurahCard({
             {surah.arabicName}
           </p>
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] text-muted-foreground">
           <span>{surah.englishNameTranslation}</span>
           <span>·</span>
           <span>{surah.ayahCount} ayahs</span>
@@ -631,7 +631,7 @@ function AyahRow({
             "rounded-lg p-1.5 transition-colors",
             bookmarked
               ? "text-gold"
-              : "text-muted-foreground/40 opacity-0 group-hover:opacity-100",
+              : "text-muted-foreground/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
           )}
         >
           {bookmarked ? (

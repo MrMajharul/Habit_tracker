@@ -149,7 +149,7 @@ function AddGoalDialog({ onAdd }: { onAdd: (g: Goal) => void }) {
               <input id="goal-title" {...register("title")} className={inputClass} placeholder="Complete Qur'an" />
               {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="goal-category">Type</Label>
                 <select id="goal-category" {...register("category")} className={inputClass}>
@@ -352,13 +352,13 @@ export function GoalsPageClient() {
       </div>
 
       {/* Category Filter */}
-      <div className="flex gap-1 rounded-xl bg-muted/60 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-xl bg-muted/60 p-1">
         {(["all", "daily", "weekly", "long_term"] as const).map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={cn(
-              "flex-1 rounded-lg px-2 py-1.5 text-xs font-medium capitalize transition-colors",
+              "flex-1 shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium capitalize transition-colors whitespace-nowrap",
               activeCategory === cat
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",

@@ -161,7 +161,7 @@ export function SubjectDetail({
             </div>
 
             {/* Weekly Target Widget */}
-            <div className="min-w-[220px] rounded-xl border border-border/80 bg-muted/30 p-3.5">
+            <div className="w-full sm:w-auto sm:min-w-[220px] rounded-xl border border-border/80 bg-muted/30 p-3.5">
               <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
                 <span>Weekly Target Progress</span>
                 <span className="font-semibold text-foreground">

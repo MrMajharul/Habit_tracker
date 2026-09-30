@@ -41,6 +41,7 @@ export function PeriodSelector({
             variant={preset === item.id ? "default" : "outline"}
             aria-pressed={preset === item.id}
             onClick={() => onPresetChange(item.id)}
+            className="shrink-0"
           >
             {item.label}
           </Button>

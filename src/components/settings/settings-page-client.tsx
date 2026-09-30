@@ -429,9 +429,9 @@ export function SettingsPageClient() {
                 />
               </div>
             </div>
-            <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+                <ShieldCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                 Row-Level Security (RLS) protects your worship and study data
               </span>
               <Button
@@ -439,6 +439,7 @@ export function SettingsPageClient() {
                 variant="outline"
                 disabled={savingProfile}
                 onClick={handleSaveProfile}
+                className="w-full sm:w-auto"
               >
                 {savingProfile ? "Saving..." : "Save Profile"}
               </Button>

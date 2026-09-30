@@ -178,16 +178,16 @@ export function StudyPageClient() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: "Tasks done", value: completedToday },
           { label: "Study time", value: `${totalMinutes} min` },
           { label: "Subjects", value: subjects.length },
         ].map((s) => (
           <Card key={s.label}>
-            <CardContent className="pt-4 pb-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{s.value}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{s.label}</p>
+            <CardContent className="px-2 sm:px-4 pt-3.5 pb-3 sm:pt-4 sm:pb-4 text-center">
+              <p className="text-lg sm:text-2xl font-bold text-foreground truncate">{s.value}</p>
+              <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground truncate">{s.label}</p>
             </CardContent>
           </Card>
         ))}
