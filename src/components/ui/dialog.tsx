@@ -31,18 +31,18 @@ function DialogPopup({
     <Dialog.Portal>
       <Dialog.Backdrop
         className={cn(
-          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm",
+          "fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm",
           "transition-opacity data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
         )}
       />
       <Dialog.Popup
         className={cn(
-          "fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center",
+          "fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4",
           className,
         )}
         {...props}
       >
-        <div className="relative w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl">
+        <div className="relative w-full max-w-lg rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-xl max-h-[92vh] overflow-y-auto no-scrollbar">
           {children}
         </div>
       </Dialog.Popup>

@@ -3,12 +3,16 @@
 import {
   Bell,
   Check,
+  Copy,
   Download,
   ExternalLink,
   FileText,
   Globe,
+  HelpCircle,
   Laptop,
   LogOut,
+  Mail,
+  MessageSquarePlus,
   Moon,
   RotateCcw,
   ShieldCheck,
@@ -44,6 +48,12 @@ import { useIsMounted } from "@/hooks/use-is-mounted";
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { FaqDialog } from "@/components/settings/faq-dialog";
+import { FeedbackDialog } from "@/components/settings/feedback-dialog";
+import {
+  formatDiagnosticsSummary,
+  getSystemDiagnostics,
+} from "@/services/feedback/feedback-service";
 
 interface SettingsProfile {
   name: string;
@@ -359,6 +369,42 @@ export function SettingsPageClient() {
         // Ignore
       }
       toast.info("Preferences reset to defaults");
+    }
+  };
+
+  const [copiedEmail, setCopiedEmail] = React.useState(false);
+  const [copiedDiagnostics, setCopiedDiagnostics] = React.useState(false);
+
+  const [systemDiagnostics, setSystemDiagnostics] = React.useState(() =>
+    getSystemDiagnostics()
+  );
+
+  React.useEffect(() => {
+    if (mounted) {
+      setSystemDiagnostics(getSystemDiagnostics());
+    }
+  }, [mounted]);
+
+  const handleCopySupportEmail = async () => {
+    try {
+      await navigator.clipboard.writeText("support@istiqamaah.app");
+      setCopiedEmail(true);
+      toast.success("Support email copied to clipboard!");
+      setTimeout(() => setCopiedEmail(false), 2000);
+    } catch {
+      toast.error("Failed to copy email.");
+    }
+  };
+
+  const handleCopyDiagnostics = async () => {
+    try {
+      const summary = formatDiagnosticsSummary(systemDiagnostics);
+      await navigator.clipboard.writeText(summary);
+      setCopiedDiagnostics(true);
+      toast.success("System diagnostics copied to clipboard!");
+      setTimeout(() => setCopiedDiagnostics(false), 2000);
+    } catch {
+      toast.error("Failed to copy diagnostics.");
     }
   };
 
@@ -749,6 +795,144 @@ export function SettingsPageClient() {
               >
                 <LogOut className="size-4" />
                 Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Feedback & Support */}
+      <section className="space-y-3 min-w-0 max-w-full">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Feedback &amp; Support
+            </h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              মতামত, সমস্যা বা নতুন ফিচারের প্রস্তাব জানান
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <FaqDialog />
+            <FeedbackDialog userEmail={profile.email} userName={profile.name} />
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            {/* Row 1: Feedback & Bug report */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary mt-0.5">
+                  <MessageSquarePlus className="size-4 sm:size-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">Send Feedback &amp; Ideas</p>
+                    <Badge variant="outline" className="text-[10px] hidden sm:inline-flex">Community</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Report a bug, suggest features, or submit corrections for Quranic / Hadith translations.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 self-start sm:self-auto">
+                <FeedbackDialog userEmail={profile.email} userName={profile.name} />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Row 2: Help & FAQ */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  <HelpCircle className="size-4 sm:size-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Frequently Asked Questions &amp; Help</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Clear guidance on prayer calculations, offline synchronization, streak rules, and privacy.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0 self-start sm:self-auto">
+                <FaqDialog />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Row 3: Direct Email Support */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 mt-0.5">
+                  <Mail className="size-4 sm:size-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium">Official Support Email</p>
+                    <Badge variant="secondary" className="text-[10px] text-muted-foreground font-mono">
+                      support@istiqamaah.app
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Need direct help? Response time is typically within 24–48 hours (Insha&apos;Allah).
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={handleCopySupportEmail}
+                >
+                  {copiedEmail ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                  <span>{copiedEmail ? "Copied" : "Copy Email"}</span>
+                </Button>
+                <a
+                  href="mailto:support@istiqamaah.app?subject=[Support%20Inquiry]%20Istiqamaah%20App"
+                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 gap-1.5 text-xs")}
+                >
+                  <Mail className="size-3.5" />
+                  <span>Send Mail</span>
+                </a>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Row 4: Device & System Diagnostics */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground mt-0.5">
+                  <Laptop className="size-4 sm:size-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium">Device &amp; System Diagnostics</p>
+                    <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {mounted ? (systemDiagnostics.online ? "Online" : "Offline") : "Ready"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    v{systemDiagnostics.appVersion}
+                    {mounted && (
+                      <> • {systemDiagnostics.os} • {systemDiagnostics.browser} • {systemDiagnostics.timezone}</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5 text-xs shrink-0 self-start sm:self-auto"
+                onClick={handleCopyDiagnostics}
+              >
+                {copiedDiagnostics ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
+                <span>{copiedDiagnostics ? "Copied" : "Copy Diagnostics"}</span>
               </Button>
             </div>
           </CardContent>
