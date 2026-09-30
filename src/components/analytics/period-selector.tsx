@@ -31,8 +31,8 @@ export function PeriodSelector({
   onCustomChange,
 }: PeriodSelectorProps) {
   return (
-    <div className="space-y-3">
-      <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Date range">
+    <div className="space-y-3 min-w-0 max-w-full">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar min-w-0 max-w-full" role="tablist" aria-label="Date range">
         {PRESETS.map((item) => (
           <Button
             key={item.id}
@@ -41,7 +41,7 @@ export function PeriodSelector({
             variant={preset === item.id ? "default" : "outline"}
             aria-pressed={preset === item.id}
             onClick={() => onPresetChange(item.id)}
-            className="shrink-0"
+            className="shrink-0 h-8 px-2.5 text-xs whitespace-nowrap"
           >
             {item.label}
           </Button>

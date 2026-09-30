@@ -158,7 +158,7 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-12 min-w-0 max-w-full">
       {/* Top Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -200,9 +200,9 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
       </div>
 
       {/* Date Period Selector */}
-      <Card className="border-border/70">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3">
+      <Card className="border-border/70 min-w-0 max-w-full">
+        <CardContent className="p-3.5 sm:p-4">
+          <div className="flex flex-col gap-3 min-w-0 max-w-full">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-medium text-muted-foreground">Date Period</span>
               {summary && (
@@ -223,7 +223,7 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
       </Card>
 
       {/* Section Navigation Tabs */}
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Analytics sections">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar min-w-0 max-w-full" role="tablist" aria-label="Analytics sections">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -234,7 +234,7 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
               aria-selected={isActive}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm",
+                "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all sm:text-sm whitespace-nowrap",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -441,10 +441,13 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
                 <CardContent className="space-y-6">
                   {/* Per-Prayer Completion Breakdown */}
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:grid-cols-5">
-                    {summary.prayer.perPrayer.map((item) => (
+                    {summary.prayer.perPrayer.map((item, index) => (
                       <div
                         key={item.prayer}
-                        className="rounded-xl border border-border/70 bg-card p-3 text-center"
+                        className={cn(
+                          "rounded-xl border border-border/70 bg-card p-3 text-center",
+                          index === 4 && "col-span-2 sm:col-span-1",
+                        )}
                       >
                         <p className="text-xs font-semibold capitalize text-muted-foreground">
                           {prayerNameLabel(item.prayer)}
@@ -518,8 +521,8 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
                     ) : (
                       summary.habits.habits.map((habit) => (
                         <div key={habit.habitId} className="space-y-1.5 rounded-xl border border-border/60 p-3">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-medium">{habit.name}</span>
+                          <div className="flex flex-wrap items-center justify-between gap-1 text-sm">
+                            <span className="font-medium truncate max-w-[180px] sm:max-w-none">{habit.name}</span>
                             <div className="flex items-center gap-2 text-xs">
                               <span className="flex items-center gap-1 font-semibold text-amber-500">
                                 <Flame className="size-3" />

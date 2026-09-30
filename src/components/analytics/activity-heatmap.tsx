@@ -34,8 +34,8 @@ export function ActivityHeatmap({ data }: { data: Record<HeatmapFilter, HeatmapC
   }, [cells]);
 
   return (
-    <section className="space-y-3" aria-label="Activity heatmap">
-      <div className="-mx-1 flex gap-1 overflow-x-auto px-1">
+    <section className="space-y-3 min-w-0 max-w-full" aria-label="Activity heatmap">
+      <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar min-w-0 max-w-full">
         {FILTERS.map((item) => (
           <Button
             key={item.id}
@@ -43,12 +43,13 @@ export function ActivityHeatmap({ data }: { data: Record<HeatmapFilter, HeatmapC
             size="xs"
             variant={filter === item.id ? "default" : "outline"}
             onClick={() => setFilter(item.id)}
+            className="shrink-0"
           >
             {item.label}
           </Button>
         ))}
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto pb-1 no-scrollbar min-w-0 max-w-full">
         <div className="grid w-max grid-rows-7 grid-flow-col gap-1">
           {padded.map((cell, index) => (
             <div

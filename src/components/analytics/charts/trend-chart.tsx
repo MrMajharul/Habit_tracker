@@ -60,7 +60,7 @@ export function TrendChart({ data, label, unit, className, description }: TrendC
   }
 
   return (
-    <figure className={cn("space-y-2", className)}>
+    <figure className={cn("space-y-2 min-w-0 max-w-full", className)}>
       <div className="flex items-center justify-between">
         <figcaption className="text-sm font-medium">{label}</figcaption>
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
@@ -77,7 +77,7 @@ export function TrendChart({ data, label, unit, className, description }: TrendC
         <p className="text-[10px] text-muted-foreground/70 leading-relaxed">{description}</p>
       )}
 
-      <div className="relative">
+      <div className="relative min-w-0 max-w-full">
         {/* Average line */}
         {avgValue > 0 && (
           <div
@@ -91,7 +91,7 @@ export function TrendChart({ data, label, unit, className, description }: TrendC
         )}
 
         <div
-          className="flex items-end gap-1 overflow-x-auto pb-1"
+          className="flex items-end gap-1 overflow-x-auto pb-1 no-scrollbar min-w-0 max-w-full"
           style={{ height: data.length > 14 ? "10rem" : "9rem" }}
           role="img"
           aria-label={label}
@@ -106,7 +106,11 @@ export function TrendChart({ data, label, unit, className, description }: TrendC
                 key={point.date}
                 className={cn(
                   "flex flex-col items-center gap-1 transition-all duration-150",
-                  data.length <= 7 ? "min-w-10 flex-1" : data.length <= 14 ? "min-w-7 flex-1" : "min-w-5 flex-1",
+                  data.length <= 7
+                    ? "min-w-6 sm:min-w-10 flex-1"
+                    : data.length <= 14
+                      ? "min-w-5 sm:min-w-7 flex-1"
+                      : "min-w-4 sm:min-w-5 flex-1",
                 )}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}

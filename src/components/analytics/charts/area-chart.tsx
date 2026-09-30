@@ -40,7 +40,7 @@ export function AnalyticsAreaChart({ data, label, unit, className }: AreaChartPr
   const areaD = `${pathD} L ${lastP.x.toFixed(1)},${(paddingY + chartHeight).toFixed(1)} L ${firstP.x.toFixed(1)},${(paddingY + chartHeight).toFixed(1)} Z`;
 
   return (
-    <figure className={cn("space-y-2", className)}>
+    <figure className={cn("space-y-2 min-w-0 max-w-full", className)}>
       <figcaption className="text-sm font-medium">{label}</figcaption>
       <div className="relative h-44 w-full overflow-hidden rounded-xl border border-border/40 bg-card/40 p-2">
         <svg viewBox={`0 0 ${width} ${height}`} className="h-full w-full overflow-visible" preserveAspectRatio="none">
@@ -89,12 +89,20 @@ export function AnalyticsAreaChart({ data, label, unit, className }: AreaChartPr
       </div>
 
       {/* Axis Labels */}
-      <div className="flex justify-between px-1 text-[11px] text-muted-foreground">
-        {data.map((p) => (
-          <span key={p.date} className="truncate">
-            {p.label}
-          </span>
-        ))}
+      <div className="flex justify-between px-1 text-[11px] text-muted-foreground min-w-0 max-w-full overflow-hidden">
+        {data.map((p, i) => {
+          const show =
+            data.length <= 7 ||
+            i === 0 ||
+            i === data.length - 1 ||
+            i === Math.floor(data.length / 2);
+          if (!show) return null;
+          return (
+            <span key={p.date} className="truncate">
+              {p.label}
+            </span>
+          );
+        })}
       </div>
 
       {/* Accessible screen reader list */}

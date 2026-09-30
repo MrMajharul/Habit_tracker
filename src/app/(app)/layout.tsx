@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background w-full overflow-x-hidden">
       <AppSidebar />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen flex-1 flex-col min-w-0 max-w-full">
         {/* Mobile top navigation header with logo */}
         <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border/60 bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden">
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -27,8 +27,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ThemeToggle />
         </header>
 
-        <main className="flex-1 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-8">
-          <div className="mx-auto w-full max-w-7xl">{children}</div>
+        <main className="flex-1 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-8 min-w-0 max-w-full">
+          <div className="mx-auto w-full max-w-7xl min-w-0">{children}</div>
         </main>
         <MobileNav />
       </div>
