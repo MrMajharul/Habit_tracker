@@ -14,6 +14,7 @@ import {
   Star,
   Target,
   TrendingUp,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -320,6 +321,7 @@ function QuranReader({
   const [ayahs, setAyahs] = useState<AyahWithTranslation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
 
   const [translationLang, setTranslationLang] = useState<"en" | "bn" | "both">(() => {
     if (typeof window === "undefined") return "both";
@@ -371,7 +373,7 @@ function QuranReader({
     return () => {
       mounted = false;
     };
-  }, [surahNumber]);
+  }, [surahNumber, reloadCount]);
 
   const handleBookmarkToggle = useCallback(
     (ayahNumber: number) => {
@@ -487,7 +489,18 @@ function QuranReader({
           <CardContent className="py-10 text-center">
             <BookOpen className="mx-auto mb-3 size-8 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">{error}</p>
-            <p className="mt-2 text-xs text-muted-foreground">
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReloadCount((c) => c + 1)}
+                className="gap-1.5"
+              >
+                <RotateCcw className="size-3.5" />
+                Try Again
+              </Button>
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">
               Content source: Al-Quran Cloud API (alquran.cloud)
             </p>
           </CardContent>

@@ -86,5 +86,23 @@ describe("Qur'an Provider", () => {
     it("should report its provider name", () => {
       expect(provider.getProviderName()).toBe("Al-Quran Cloud API (alquran.cloud)");
     });
+
+    it("should return ayahs for Surah 1 with Arabic, English, and Bengali text", async () => {
+      const ayahs = await provider.getAyahs(1);
+      expect(ayahs.length).toBe(7);
+      expect(ayahs[0].text).toBeDefined();
+      expect(ayahs[0].translation).toBeDefined();
+      expect(ayahs[0].translationBn).toBeDefined();
+      expect(ayahs[0].number).toBe(1);
+    });
+
+    it("should cache fetched surah ayahs in localStorage", async () => {
+      await provider.getAyahs(112);
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        "istiqamaah_quran_surah_112",
+        expect.any(String)
+      );
+    });
   });
 });
+

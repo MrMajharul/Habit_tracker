@@ -6,6 +6,7 @@
 // source. No AI-generated content is used for Qur'an text.
 // ============================================================================
 
+import { SEED_SURAHS } from "@/data/quran/seed-quran";
 import type {
   AyahWithTranslation,
   QuranContentProvider,
@@ -158,58 +159,162 @@ export class AlQuranCloudProvider implements QuranContentProvider {
   async getAyahs(surahNumber: number): Promise<AyahWithTranslation[]> {
     if (surahNumber < 1 || surahNumber > 114) return [];
 
-    // Return from cache if available
+    // 1. In-memory cache
     const cached = ayahCache.get(surahNumber);
-    if (cached) return cached;
+    if (cached && cached.length > 0) return cached;
 
+    const storageKey = `istiqamaah_quran_surah_${surahNumber}`;
+
+    // 2. Persistent localStorage cache
+    if (typeof localStorage !== "undefined") {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            ayahCache.set(surahNumber, parsed);
+            return parsed;
+          }
+        }
+      } catch {
+        // Ignore storage error
+      }
+    }
+
+    // 3. Try Next.js internal API route (same-origin, bypasses external network/CSP limits)
+    if (typeof window !== "undefined") {
+      try {
+        const res = await fetch(`/api/quran?surah=${surahNumber}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.ayahs && Array.isArray(json.ayahs) && json.ayahs.length > 0) {
+            ayahCache.set(surahNumber, json.ayahs);
+            if (typeof localStorage !== "undefined") {
+              try {
+                localStorage.setItem(storageKey, JSON.stringify(json.ayahs));
+              } catch {}
+            }
+            return json.ayahs;
+          }
+        }
+      } catch {
+        // Fall back to direct fetch
+      }
+    }
+
+    // 4. Try single combined multi-edition endpoint from Al-Quran Cloud API
     try {
-      // Fetch Arabic text, English translation, and Bengali translation in parallel
+      const multiRes = await fetch(
+        `${this.baseUrl}/surah/${surahNumber}/editions/quran-uthmani,en.sahih,bn.bengali`
+      );
+      if (multiRes.ok) {
+        const json = await multiRes.json();
+        const editions = json?.data ?? [];
+        const arabicData = editions[0]?.ayahs ?? [];
+        const enData = editions[1]?.ayahs ?? [];
+        const bnData = editions[2]?.ayahs ?? [];
+
+        if (Array.isArray(arabicData) && arabicData.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ayahs: AyahWithTranslation[] = arabicData.map((a: any, idx: number) => ({
+            number: a.numberInSurah,
+            numberInQuran: a.number,
+            text: a.text,
+            juz: a.juz,
+            page: a.page,
+            translation: enData[idx]?.text ?? undefined,
+            translationEdition: "Sahih International (en.sahih)",
+            translationBn: bnData[idx]?.text ?? undefined,
+            translationBnEdition: "Maulana Muhiuddin Khan (bn.bengali)",
+          }));
+
+          ayahCache.set(surahNumber, ayahs);
+          if (typeof localStorage !== "undefined") {
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(ayahs));
+            } catch {}
+          }
+          return ayahs;
+        }
+      }
+    } catch {
+      // Fall back to individual endpoints
+    }
+
+    // 5. Fallback to individual parallel endpoints
+    try {
       const [arabicRes, translationRes, bnRes] = await Promise.all([
         fetch(`${this.baseUrl}/surah/${surahNumber}/quran-uthmani`).catch(() => null),
         fetch(`${this.baseUrl}/surah/${surahNumber}/en.sahih`).catch(() => null),
         fetch(`${this.baseUrl}/surah/${surahNumber}/bn.bengali`).catch(() => null),
       ]);
 
-      if (!arabicRes || !arabicRes.ok) {
-        console.warn(`Failed to fetch ayahs for Surah ${surahNumber}`);
-        return [];
+      if (arabicRes && arabicRes.ok) {
+        const arabicData = await arabicRes.json();
+        const translationData = translationRes && translationRes.ok ? await translationRes.json() : null;
+        const bnData = bnRes && bnRes.ok ? await bnRes.json() : null;
+
+        const arabicAyahs = arabicData?.data?.ayahs ?? [];
+        const translationAyahs = translationData?.data?.ayahs ?? [];
+        const bnAyahs = bnData?.data?.ayahs ?? [];
+
+        if (arabicAyahs.length > 0) {
+          const ayahs: AyahWithTranslation[] = arabicAyahs.map(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (a: any, idx: number) => ({
+              number: a.numberInSurah,
+              numberInQuran: a.number,
+              text: a.text,
+              juz: a.juz,
+              page: a.page,
+              translation: translationAyahs[idx]?.text ?? undefined,
+              translationEdition: "Sahih International (en.sahih)",
+              translationBn: bnAyahs[idx]?.text ?? undefined,
+              translationBnEdition: "Maulana Muhiuddin Khan (bn.bengali)",
+            }),
+          );
+
+          ayahCache.set(surahNumber, ayahs);
+          if (typeof localStorage !== "undefined") {
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(ayahs));
+            } catch {}
+          }
+          return ayahs;
+        }
       }
-
-      const arabicData = await arabicRes.json();
-      const translationData = translationRes && translationRes.ok ? await translationRes.json() : null;
-      const bnData = bnRes && bnRes.ok ? await bnRes.json() : null;
-
-      const arabicAyahs = arabicData?.data?.ayahs ?? [];
-      const translationAyahs = translationData?.data?.ayahs ?? [];
-      const bnAyahs = bnData?.data?.ayahs ?? [];
-
-      const ayahs: AyahWithTranslation[] = arabicAyahs.map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (a: any, idx: number) => ({
-          number: a.numberInSurah,
-          numberInQuran: a.number,
-          text: a.text,
-          juz: a.juz,
-          page: a.page,
-          translation: translationAyahs[idx]?.text ?? undefined,
-          translationEdition: "Sahih International (en.sahih)",
-          translationBn: bnAyahs[idx]?.text ?? undefined,
-          translationBnEdition: "Maulana Muhiuddin Khan (bn.bengali)",
-        }),
-      );
-
-      // Cache the result
-      ayahCache.set(surahNumber, ayahs);
-
-      return ayahs;
     } catch (err) {
       console.warn(`Error fetching ayahs for Surah ${surahNumber}:`, err);
-      return [];
     }
+
+    // 6. Offline seed fallback for essential Surahs
+    const seedAyahs = SEED_SURAHS[surahNumber];
+    if (seedAyahs && seedAyahs.length > 0) {
+      ayahCache.set(surahNumber, seedAyahs);
+      if (typeof localStorage !== "undefined") {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(seedAyahs));
+        } catch {}
+      }
+      return seedAyahs;
+    }
+
+    return [];
   }
 
   async searchContent(query: string): Promise<AyahWithTranslation[]> {
     if (!query || query.length < 2) return [];
+
+    // Try internal route first
+    if (typeof window !== "undefined") {
+      try {
+        const res = await fetch(`/api/quran?search=${encodeURIComponent(query.trim())}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.ayahs && Array.isArray(json.ayahs)) return json.ayahs;
+        }
+      } catch {}
+    }
 
     try {
       const res = await fetch(
