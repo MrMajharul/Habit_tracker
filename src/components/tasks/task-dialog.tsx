@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isDateOnlyDueDate } from "@/services/calendar/calendar-service";
 import type { Subject, Task, TaskPriority, TaskStatus } from "@/services/study/types";
 
 interface TaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   taskToEdit?: Task | null;
+  defaultDueDate?: string;
   subjects: Subject[];
   defaultSubjectId?: string;
   onSave: (task: Task) => void;
@@ -41,6 +43,7 @@ interface TaskDialogProps {
 
 function TaskFormContent({
   taskToEdit,
+  defaultDueDate,
   subjects,
   defaultSubjectId,
   onClose,
@@ -49,6 +52,7 @@ function TaskFormContent({
   updateTaskFn,
 }: {
   taskToEdit?: Task | null;
+  defaultDueDate?: string;
   subjects: Subject[];
   defaultSubjectId?: string;
   onClose: () => void;
@@ -63,11 +67,32 @@ function TaskFormContent({
   const [description, setDescription] = useState(taskToEdit?.description ?? "");
   const [priority, setPriority] = useState<TaskPriority>(taskToEdit?.priority ?? "MEDIUM");
   const [status, setStatus] = useState<TaskStatus>(taskToEdit?.status ?? "TODO");
-  const [dueDate, setDueDate] = useState(
-    taskToEdit?.dueDate
-      ? format(new Date(taskToEdit.dueDate), "yyyy-MM-dd")
-      : format(new Date(), "yyyy-MM-dd"),
-  );
+
+  const isEditingTimed =
+    taskToEdit?.dueDate ? !isDateOnlyDueDate(taskToEdit.dueDate) : false;
+  const [hasSpecificTime, setHasSpecificTime] = useState(Boolean(isEditingTimed));
+  const [dueTime, setDueTime] = useState(() => {
+    if (isEditingTimed && taskToEdit?.dueDate) {
+      try {
+        return format(new Date(taskToEdit.dueDate), "HH:mm");
+      } catch {
+        return "14:00";
+      }
+    }
+    return "14:00";
+  });
+  const [dueDate, setDueDate] = useState(() => {
+    if (taskToEdit?.dueDate) {
+      if (taskToEdit.dueDate.length === 10) return taskToEdit.dueDate;
+      try {
+        return format(new Date(taskToEdit.dueDate), "yyyy-MM-dd");
+      } catch {
+        return format(new Date(), "yyyy-MM-dd");
+      }
+    }
+    return defaultDueDate || format(new Date(), "yyyy-MM-dd");
+  });
+
   const [estimatedMinutes, setEstimatedMinutes] = useState(
     taskToEdit?.estimatedMinutes ?? 25,
   );
@@ -81,8 +106,13 @@ function TaskFormContent({
       setIsSubmitting(true);
       let parsedDueDate: string | null = null;
       if (dueDate) {
-        const [year, month, day] = dueDate.split("-").map(Number);
-        parsedDueDate = new Date(year, month - 1, day, 23, 59, 59, 999).toISOString();
+        if (hasSpecificTime && dueTime) {
+          const [year, month, day] = dueDate.split("-").map(Number);
+          const [hours, minutes] = dueTime.split(":").map(Number);
+          parsedDueDate = new Date(year, month - 1, day, hours, minutes, 0).toISOString();
+        } else {
+          parsedDueDate = dueDate;
+        }
       }
 
       if (taskToEdit) {
@@ -185,31 +215,66 @@ function TaskFormContent({
           </div>
         </div>
 
-        {/* Due date and Duration */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="task-due-date">Due Date</Label>
-            <Input
-              id="task-due-date"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full"
-            />
+        {/* Due date, Time and Duration */}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="task-due-date">Due Date</Label>
+              <Input
+                id="task-due-date"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="task-est-minutes">Est. Duration (min)</Label>
+              <Input
+                id="task-est-minutes"
+                type="number"
+                min={5}
+                max={480}
+                step={5}
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
+                className="w-full"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="task-est-minutes">Est. Duration (min)</Label>
-            <Input
-              id="task-est-minutes"
-              type="number"
-              min={5}
-              max={480}
-              step={5}
-              value={estimatedMinutes}
-              onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-              className="w-full"
-            />
+          <div className="rounded-lg border border-border/50 bg-muted/30 p-2.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="task-has-time" className="text-xs font-medium text-foreground cursor-pointer flex items-center gap-2 select-none">
+                <input
+                  id="task-has-time"
+                  type="checkbox"
+                  checked={hasSpecificTime}
+                  onChange={(e) => setHasSpecificTime(e.target.checked)}
+                  className="rounded border-input text-primary focus:ring-primary/40 size-4 cursor-pointer"
+                />
+                Schedule specific start time
+              </label>
+              {!hasSpecificTime && (
+                <span className="text-[11px] text-muted-foreground">All-day event</span>
+              )}
+            </div>
+
+            {hasSpecificTime && (
+              <div className="pt-1 flex items-center gap-3">
+                <div className="space-y-1 flex-1">
+                  <Label htmlFor="task-due-time" className="text-xs">Start Time</Label>
+                  <Input
+                    id="task-due-time"
+                    type="time"
+                    value={dueTime}
+                    onChange={(e) => setDueTime(e.target.value)}
+                    className="w-full h-9 text-sm"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -271,6 +336,7 @@ export function TaskDialog({
   open,
   onOpenChange,
   taskToEdit,
+  defaultDueDate,
   subjects,
   defaultSubjectId,
   onSave,
@@ -283,8 +349,9 @@ export function TaskDialog({
         <DialogContent>
           {open && (
             <TaskFormContent
-              key={taskToEdit?.id ?? "new-task"}
+              key={taskToEdit?.id ?? defaultDueDate ?? "new-task"}
               taskToEdit={taskToEdit}
+              defaultDueDate={defaultDueDate}
               subjects={subjects}
               defaultSubjectId={defaultSubjectId}
               onClose={() => onOpenChange(false)}
