@@ -10,6 +10,8 @@
  * Authentic, verified recitations licensed for public educational and religious use.
  */
 
+import { fetchChapterTiming } from "./quran-audio-timing-service";
+
 export interface Reciter {
   id: string;
   name: string;
@@ -176,6 +178,7 @@ export async function downloadSurahAudio(
     const response = await fetch(primary, { mode: "cors" });
     if (response.ok) {
       await cache.put(primary, response.clone());
+      fetchChapterTiming(surahNumber, reciterId).catch(() => {});
       if (onProgress) onProgress(100);
       return true;
     }
@@ -189,6 +192,7 @@ export async function downloadSurahAudio(
       const fbResponse = await fetch(fallback, { mode: "cors" });
       if (fbResponse.ok) {
         await cache.put(primary, fbResponse.clone());
+        fetchChapterTiming(surahNumber, reciterId).catch(() => {});
         if (onProgress) onProgress(100);
         return true;
       }

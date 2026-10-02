@@ -6,6 +6,7 @@ import {
   Check,
   Download,
   Loader2,
+  LocateFixed,
   Pause,
   Play,
   RotateCcw,
@@ -31,12 +32,35 @@ import {
   setupMediaSession,
   updateMediaPlaybackState,
 } from "@/services/quran/quran-audio-service";
+import {
+  ChapterTimingData,
+  fetchChapterTiming,
+  findActiveAyahAndWord,
+  getAyahStartSeconds,
+} from "@/services/quran/quran-audio-timing-service";
 import type { SurahInfo } from "@/services/quran/quran-types";
 import { cn } from "@/lib/utils";
+
+export interface AudioPlaybackState {
+  isPlaying: boolean;
+  activeAyahNumber: number | null;
+  activeWordIndex: number | null;
+  currentTime: number;
+}
+
+export interface QuranAudioPlayerHandle {
+  seekToAyah: (ayahNumber: number) => Promise<void>;
+  play: () => Promise<void>;
+  pause: () => void;
+}
 
 interface QuranAudioPlayerProps {
   currentSurah: SurahInfo;
   onSelectSurah?: (surahNumber: number) => void;
+  onPlaybackStateChange?: (state: AudioPlaybackState) => void;
+  playerRef?: React.MutableRefObject<QuranAudioPlayerHandle | null>;
+  autoScroll?: boolean;
+  onToggleAutoScroll?: () => void;
   className?: string;
 }
 
@@ -50,6 +74,10 @@ function formatTime(seconds: number): string {
 export function QuranAudioPlayer({
   currentSurah,
   onSelectSurah,
+  onPlaybackStateChange,
+  playerRef,
+  autoScroll,
+  onToggleAutoScroll,
   className,
 }: QuranAudioPlayerProps) {
   const [selectedReciterId, setSelectedReciterId] = React.useState<string>(() => {
@@ -71,6 +99,7 @@ export function QuranAudioPlayer({
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [audioSrc, setAudioSrc] = React.useState<string>("");
+  const [timingData, setTimingData] = React.useState<ChapterTimingData | null>(null);
 
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const activeBlobUrlRef = React.useRef<string | null>(null);
@@ -78,15 +107,67 @@ export function QuranAudioPlayer({
   const triedFallbackRef = React.useRef(false);
   const wasAutoAdvancingRef = React.useRef(false);
   const onSelectSurahRef = React.useRef(onSelectSurah);
+  const onPlaybackStateChangeRef = React.useRef(onPlaybackStateChange);
 
   React.useEffect(() => {
     onSelectSurahRef.current = onSelectSurah;
   }, [onSelectSurah]);
 
+  React.useEffect(() => {
+    onPlaybackStateChangeRef.current = onPlaybackStateChange;
+  }, [onPlaybackStateChange]);
+
   const selectedReciter =
     RECITERS.find((r) => r.id === selectedReciterId) ?? RECITERS[0];
 
-  // Resolve audio source (cached blob or remote primary CDN) when Surah or Reciter changes
+  // Expose imperative handle (seekToAyah, play, pause) to parent
+  React.useEffect(() => {
+    if (playerRef) {
+      playerRef.current = {
+        seekToAyah: async (targetAyah: number) => {
+          let currentTimings = timingData;
+          if (!currentTimings) {
+            currentTimings = await fetchChapterTiming(currentSurah.number, selectedReciterId);
+            if (currentTimings) setTimingData(currentTimings);
+          }
+          const targetSeconds = getAyahStartSeconds(currentTimings?.timestamps, targetAyah);
+          if (targetSeconds !== null && audioRef.current) {
+            audioRef.current.currentTime = targetSeconds;
+            setCurrentTime(targetSeconds);
+            try {
+              await audioRef.current.play();
+              setIsPlaying(true);
+              setIsLoading(false);
+              updateMediaPlaybackState("playing");
+            } catch (err) {
+              console.warn("Error playing target ayah:", err);
+            }
+          }
+        },
+        play: async () => {
+          if (audioRef.current) {
+            await audioRef.current.play();
+            setIsPlaying(true);
+            updateMediaPlaybackState("playing");
+          }
+        },
+        pause: () => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            setIsPlaying(false);
+            updateMediaPlaybackState("paused");
+          }
+        },
+      };
+    }
+    return () => {
+      if (playerRef) {
+        playerRef.current = null;
+      }
+    };
+  }, [playerRef, currentSurah.number, selectedReciterId, timingData]);
+
+  // Resolve audio source & timing data when Surah or Reciter changes
   React.useEffect(() => {
     let cancelled = false;
     triedFallbackRef.current = false;
@@ -134,6 +215,17 @@ export function QuranAudioPlayer({
           setAudioSrc(primary);
         }
       }
+
+      // Fetch synchronized chapter timestamps and word segments
+      fetchChapterTiming(currentSurah.number, selectedReciterId).then((data) => {
+        if (!cancelled && data) {
+          setTimingData(data);
+          // If we are not playing a local cached blob and audioUrl is available, use it for exact sync
+          if (!activeBlobUrlRef.current && data.audioUrl) {
+            setAudioSrc(data.audioUrl);
+          }
+        }
+      });
 
       // If user was auto-advancing from the previous Surah ending, resume playback
       if (wasAutoAdvancingRef.current) {
@@ -228,13 +320,18 @@ export function QuranAudioPlayer({
       audio.pause();
       setIsPlaying(false);
       updateMediaPlaybackState("paused");
+      onPlaybackStateChangeRef.current?.({
+        isPlaying: false,
+        activeAyahNumber: null,
+        activeWordIndex: null,
+        currentTime: audio.currentTime,
+      });
     } else {
       if (isPendingPlayRef.current) return;
       isPendingPlayRef.current = true;
       setIsLoading(true);
 
       try {
-        // Ensure src is bound
         if (!audio.src && audioSrc) {
           audio.src = audioSrc;
         }
@@ -251,8 +348,9 @@ export function QuranAudioPlayer({
           if (fallback && !audio.src.includes(fallback) && !triedFallbackRef.current) {
             triedFallbackRef.current = true;
             setAudioSrc(fallback);
+            audio.src = fallback;
+            audio.load();
             try {
-              audio.src = fallback;
               await audio.play();
               setIsPlaying(true);
               setIsLoading(false);
@@ -292,6 +390,21 @@ export function QuranAudioPlayer({
     if (audio.duration && !isNaN(audio.duration) && audio.duration !== duration) {
       setDuration(audio.duration);
     }
+
+    // Compute active Ayah and Word for highlighting
+    const currentTimeMs = Math.floor(audio.currentTime * 1000);
+    const { activeAyahNumber, activeWordIndex } = findActiveAyahAndWord(
+      timingData?.timestamps,
+      currentTimeMs,
+    );
+
+    onPlaybackStateChangeRef.current?.({
+      isPlaying: !audio.paused,
+      activeAyahNumber,
+      activeWordIndex,
+      currentTime: audio.currentTime,
+    });
+
     // Save state periodically (every 5 seconds)
     if (Math.floor(audio.currentTime) % 5 === 0) {
       saveAudioState({
@@ -315,6 +428,12 @@ export function QuranAudioPlayer({
     setIsPlaying(false);
     setIsLoading(false);
     updateMediaPlaybackState("paused");
+    onPlaybackStateChangeRef.current?.({
+      isPlaying: false,
+      activeAyahNumber: null,
+      activeWordIndex: null,
+      currentTime: duration,
+    });
     // Auto-advance to next surah if available
     if (currentSurah.number < 114 && onSelectSurahRef.current) {
       wasAutoAdvancingRef.current = true;
@@ -423,7 +542,7 @@ export function QuranAudioPlayer({
       />
 
       <div className="flex flex-col gap-3">
-        {/* Top row: Reciter selector + offline download badge */}
+        {/* Top row: Reciter selector + Auto-scroll toggle + offline download badge */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-muted-foreground">Reciter:</span>
@@ -449,6 +568,25 @@ export function QuranAudioPlayer({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Auto-Scroll follower toggle */}
+            {onToggleAutoScroll && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-7 text-xs gap-1.5 font-medium cursor-pointer transition-colors",
+                  autoScroll
+                    ? "border-primary/40 bg-primary/10 text-primary dark:bg-emerald-500/15 dark:text-emerald-300"
+                    : "text-muted-foreground",
+                )}
+                onClick={onToggleAutoScroll}
+                title={autoScroll ? "Disable Auto-Scroll" : "Enable Auto-Scroll"}
+              >
+                <LocateFixed className="size-3.5" />
+                <span>Follow: {autoScroll ? "On" : "Off"}</span>
+              </Button>
+            )}
+
             {isCachedOffline ? (
               <div className="flex items-center gap-1.5">
                 <Badge

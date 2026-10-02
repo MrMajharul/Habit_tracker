@@ -15,10 +15,13 @@ import {
   Target,
   TrendingUp,
   RotateCcw,
+  Pause,
+  Play,
+  Volume2,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +36,11 @@ import { quranService } from "@/services/quran/quran-service";
 import { quranBookmarkService } from "@/services/quran/quran-bookmark-service";
 import { quranGoalService } from "@/services/quran/quran-goal-service";
 import { quranProgressService } from "@/services/quran/quran-progress-service";
-import { QuranAudioPlayer } from "@/components/quran/quran-audio-player";
+import {
+  AudioPlaybackState,
+  QuranAudioPlayer,
+  QuranAudioPlayerHandle,
+} from "@/components/quran/quran-audio-player";
 import type {
   SurahInfo,
   AyahWithTranslation,
@@ -333,6 +340,31 @@ function QuranReader({
     return "both";
   });
 
+  const [activeAyahNumber, setActiveAyahNumber] = useState<number | null>(null);
+  const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const playerRef = useRef<QuranAudioPlayerHandle | null>(null);
+
+  const handlePlaybackStateChange = useCallback((state: AudioPlaybackState) => {
+    setActiveAyahNumber(state.activeAyahNumber);
+    setActiveWordIndex(state.activeWordIndex);
+    setIsAudioPlaying(state.isPlaying);
+  }, []);
+
+  // Auto-scroll to active reciting ayah smoothly
+  useEffect(() => {
+    if (!autoScroll || !activeAyahNumber || !isAudioPlaying) return;
+    const el = document.getElementById(`ayah-${activeAyahNumber}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [activeAyahNumber, autoScroll, isAudioPlaying]);
+
+  const handlePlayAyah = useCallback((targetAyah: number) => {
+    playerRef.current?.seekToAyah(targetAyah);
+  }, []);
+
   const handleSetLang = (lang: "en" | "bn" | "both") => {
     setTranslationLang(lang);
     try {
@@ -540,6 +572,10 @@ function QuranReader({
             <QuranAudioPlayer
               currentSurah={surah}
               onSelectSurah={onSelectSurah}
+              playerRef={playerRef}
+              onPlaybackStateChange={handlePlaybackStateChange}
+              autoScroll={autoScroll}
+              onToggleAutoScroll={() => setAutoScroll((prev) => !prev)}
             />
           )}
 
@@ -552,6 +588,10 @@ function QuranReader({
                   ayah={ayah}
                   surahNumber={surahNumber}
                   translationLang={translationLang}
+                  isCurrentAyah={activeAyahNumber === ayah.number}
+                  activeWordIndex={activeAyahNumber === ayah.number ? activeWordIndex : null}
+                  isPlaying={isAudioPlaying}
+                  onPlayAyah={handlePlayAyah}
                   onBookmarkToggle={handleBookmarkToggle}
                 />
               ))}
@@ -608,11 +648,19 @@ function AyahRow({
   ayah,
   surahNumber,
   translationLang,
+  isCurrentAyah,
+  activeWordIndex,
+  isPlaying,
+  onPlayAyah,
   onBookmarkToggle,
 }: {
   ayah: AyahWithTranslation;
   surahNumber: number;
   translationLang: "en" | "bn" | "both";
+  isCurrentAyah?: boolean;
+  activeWordIndex?: number | null;
+  isPlaying?: boolean;
+  onPlayAyah?: (n: number) => void;
   onBookmarkToggle: (n: number) => void;
 }) {
   const [bookmarked, setBookmarked] = useState(
@@ -624,41 +672,109 @@ function AyahRow({
     setBookmarked(!bookmarked);
   };
 
+  const words = useMemo(() => {
+    return ayah.text.trim().split(/\s+/);
+  }, [ayah.text]);
+
   return (
-    <div className="group relative px-4 py-4 transition-colors hover:bg-muted/30 sm:px-6">
-      {/* Ayah number & bookmark */}
+    <div
+      id={`ayah-${ayah.number}`}
+      className={cn(
+        "group relative px-4 py-4 transition-all duration-200 sm:px-6 scroll-mt-28",
+        isCurrentAyah
+          ? "bg-primary/5 dark:bg-emerald-950/20 border-l-4 border-l-primary shadow-xs ring-1 ring-primary/20 rounded-xl"
+          : "hover:bg-muted/30",
+      )}
+    >
+      {/* Ayah number, active recitation badge & bookmark/play buttons */}
       <div className="mb-2 flex items-center justify-between">
-        <span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-          {ayah.number}
-        </span>
-        <button
-          onClick={handleToggle}
-          aria-label={
-            bookmarked ? "Remove bookmark" : "Bookmark this ayah"
-          }
-          className={cn(
-            "rounded-lg p-1.5 transition-colors",
-            bookmarked
-              ? "text-gold"
-              : "text-muted-foreground/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "flex size-7 items-center justify-center rounded-full text-xs font-bold transition-colors",
+              isCurrentAyah
+                ? "bg-primary text-primary-foreground shadow-xs"
+                : "bg-primary/10 text-primary",
+            )}
+          >
+            {ayah.number}
+          </span>
+
+          {isCurrentAyah && isPlaying && (
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 dark:bg-emerald-500/20 dark:text-emerald-300 px-2 py-0.5 rounded-full animate-pulse">
+              <Volume2 className="size-3" />
+              <span>Reciting</span>
+            </span>
           )}
-        >
-          {bookmarked ? (
-            <BookmarkCheck className="size-4" />
-          ) : (
-            <Bookmark className="size-4" />
-          )}
-        </button>
+        </div>
+
+        <div className="flex items-center gap-1">
+          {/* Quick Play from this Ayah button */}
+          <button
+            onClick={() => onPlayAyah?.(ayah.number)}
+            aria-label={`Play from ayah ${ayah.number}`}
+            title={`Play from ayah ${ayah.number}`}
+            className={cn(
+              "flex size-7 items-center justify-center rounded-lg transition-colors cursor-pointer",
+              isCurrentAyah && isPlaying
+                ? "text-primary bg-primary/10 opacity-100"
+                : "text-muted-foreground/60 hover:text-primary hover:bg-primary/10 opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+            )}
+          >
+            {isCurrentAyah && isPlaying ? (
+              <Pause className="size-3.5 fill-current" />
+            ) : (
+              <Play className="size-3.5 fill-current ml-0.5" />
+            )}
+          </button>
+
+          {/* Bookmark toggle */}
+          <button
+            onClick={handleToggle}
+            aria-label={bookmarked ? "Remove bookmark" : "Bookmark this ayah"}
+            className={cn(
+              "rounded-lg p-1.5 transition-colors cursor-pointer",
+              bookmarked
+                ? "text-gold"
+                : "text-muted-foreground/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+            )}
+          >
+            {bookmarked ? (
+              <BookmarkCheck className="size-4" />
+            ) : (
+              <Bookmark className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
 
-      {/* Arabic text */}
+      {/* Arabic text with word-by-word interactive highlighting */}
       <p
-        className="font-arabic text-xl leading-loose text-foreground sm:text-2xl"
+        className="font-arabic text-xl leading-loose text-foreground sm:text-2xl transition-colors"
         dir="rtl"
         lang="ar"
-        style={{ lineHeight: "2.2" }}
+        style={{ lineHeight: "2.3" }}
       >
-        {ayah.text}
+        {words.map((word, idx) => {
+          const wordNum = idx + 1; // 1-based index matching segments[0]
+          const isWordActive = isCurrentAyah && activeWordIndex === wordNum;
+
+          return (
+            <span
+              key={idx}
+              className={cn(
+                "inline-block rounded-md px-1 transition-all duration-150",
+                isWordActive
+                  ? "bg-primary/25 text-primary font-bold scale-105 shadow-xs ring-1 ring-primary/40 dark:bg-emerald-500/30 dark:text-emerald-300"
+                  : isCurrentAyah
+                  ? "text-foreground"
+                  : "text-foreground/90",
+              )}
+            >
+              {word}{" "}
+            </span>
+          );
+        })}
       </p>
 
       {/* Translations */}

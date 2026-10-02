@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com",
               "media-src 'self' blob: data: https://download.quranicaudio.com https://*.quranicaudio.com https://cdn.islamic.network https://*.islamic.network https://cdn.mp3quran.net https://*.mp3quran.net https://*.everyayah.com",
-              "connect-src 'self' blob: data: https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://api.alquran.cloud https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://download.quranicaudio.com https://*.quranicaudio.com https://cdn.islamic.network https://*.islamic.network https://cdn.mp3quran.net https://*.mp3quran.net https://*.everyayah.com",
+              "connect-src 'self' blob: data: https://*.supabase.co https://va.vercel-scripts.com https://vitals.vercel-insights.com https://api.alquran.cloud https://api.quran.com https://cdn.jsdelivr.net https://nominatim.openstreetmap.org https://download.quranicaudio.com https://*.quranicaudio.com https://cdn.islamic.network https://*.islamic.network https://cdn.mp3quran.net https://*.mp3quran.net https://*.everyayah.com",
               "frame-ancestors 'none'",
             ].join("; "),
           },
