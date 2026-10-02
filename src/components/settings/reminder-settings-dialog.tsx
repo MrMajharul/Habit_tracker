@@ -8,10 +8,16 @@ import {
   Clock,
   Info,
   Loader2,
+  Play,
   Plus,
+  Square,
   Trash2,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { toast } from "sonner";
+
+import { alarmService } from "@/services/audio/alarm-service";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,6 +92,7 @@ export function ReminderSettingsDialog({ trigger }: { trigger?: React.ReactNode 
   const [loading, setLoading] = React.useState(false);
   const [permission, setPermission] = React.useState<NotificationPermissionState>("default");
   const [showAddForm, setShowAddForm] = React.useState(false);
+  const [soundEnabled, setSoundEnabled] = React.useState(() => alarmService.isSoundEnabled());
 
   // New reminder form fields
   const [newTitle, setNewTitle] = React.useState("");
@@ -93,6 +100,13 @@ export function ReminderSettingsDialog({ trigger }: { trigger?: React.ReactNode 
   const [newTime, setNewTime] = React.useState("05:30");
   const [newRepeat, setNewRepeat] = React.useState<RepeatType>("daily");
   const [newSound, setNewSound] = React.useState(true);
+
+  const handleToggleGlobalSound = () => {
+    const next = !soundEnabled;
+    alarmService.setSoundEnabled(next);
+    setSoundEnabled(next);
+    toast.info(next ? "Alarm audio enabled" : "Alarm audio muted");
+  };
 
   const loadReminders = React.useCallback(async () => {
     setLoading(true);
@@ -111,6 +125,7 @@ export function ReminderSettingsDialog({ trigger }: { trigger?: React.ReactNode 
     Promise.resolve().then(() => {
       loadReminders();
       setPermission(notifService.getPermission());
+      setSoundEnabled(alarmService.isSoundEnabled());
     });
   }, [open, loadReminders]);
 
@@ -244,6 +259,87 @@ export function ReminderSettingsDialog({ trigger }: { trigger?: React.ReactNode 
                 Enable
               </Button>
             )}
+          </div>
+        </div>
+
+        {/* Audio & Alarm Tone Preview card */}
+        <div className="rounded-xl border border-border/80 bg-muted/40 p-3 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {soundEnabled ? (
+                <Volume2 className="size-4 text-primary" />
+              ) : (
+                <VolumeX className="size-4 text-muted-foreground" />
+              )}
+              <div>
+                <p className="text-xs font-semibold text-foreground">
+                  Alarm Sounds ({soundEnabled ? "Enabled" : "Muted"})
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Synthesized offline Web Audio alarms
+                </p>
+              </div>
+            </div>
+            <ToggleSwitch
+              checked={soundEnabled}
+              onChange={handleToggleGlobalSound}
+              ariaLabel="Toggle alarm audio"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2.5 gap-1.5"
+              onClick={() => {
+                alarmService.testSound("focus");
+                toast.info("Playing Focus Session alarm...");
+              }}
+            >
+              <Play className="size-3 text-primary" />
+              Focus Alarm
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2.5 gap-1.5"
+              onClick={() => {
+                alarmService.testSound("prayer");
+                toast.info("Playing Prayer Adhan chime...");
+              }}
+            >
+              <Play className="size-3 text-emerald-600 dark:text-emerald-400" />
+              Salah Alarm
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-[11px] px-2.5 gap-1.5"
+              onClick={() => {
+                alarmService.testSound("reminder");
+                toast.info("Playing Task Reminder chime...");
+              }}
+            >
+              <Play className="size-3 text-blue-600 dark:text-blue-400" />
+              Task Chime
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                alarmService.stopAlarm();
+                toast.info("Alarm stopped");
+              }}
+            >
+              <Square className="size-3" />
+              Stop
+            </Button>
           </div>
         </div>
 

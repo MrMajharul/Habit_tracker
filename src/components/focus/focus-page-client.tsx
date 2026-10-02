@@ -10,11 +10,15 @@ import {
   RotateCcw,
   Sparkles,
   Square,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+
+import { alarmService } from "@/services/audio/alarm-service";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +89,22 @@ export function FocusPageClient() {
 
   // History & stats
   const [sessions, setSessions] = useState<FocusSession[]>([]);
+
+  // Sound alarm state
+  const [soundEnabled, setSoundEnabled] = useState(() => alarmService.isSoundEnabled());
+
+  const handleToggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    alarmService.setSoundEnabled(next);
+    if (next) {
+      alarmService.playReminderAlarm();
+      toast.success("Timer alarm sound enabled (test chime played)");
+    } else {
+      alarmService.stopAlarm();
+      toast.info("Timer alarm sound muted");
+    }
+  };
 
   // Calculate current planned minutes
   const currentPlannedMinutes =
@@ -175,14 +195,25 @@ export function FocusPageClient() {
 
       toast.success("Alhamdulillah! Focus session completed", {
         description: `Logged ${actualMinutes} minutes on ${selectedTask?.title || selectedSubject?.name || "Deep Work"}.`,
-        duration: 8000,
+        duration: 10000,
+        action: {
+          label: "Stop Alarm",
+          onClick: () => alarmService.stopAlarm(),
+        },
       });
 
       // Switch to short break
       setMode("SHORT_BREAK");
       setRemainingSeconds(5 * 60);
     } else {
-      toast.info("Break finished! Ready for your next focus session?");
+      alarmService.playFocusCompleteAlarm();
+      toast.info("Break finished! Ready for your next focus session?", {
+        duration: 8000,
+        action: {
+          label: "Stop Alarm",
+          onClick: () => alarmService.stopAlarm(),
+        },
+      });
       setMode("FOCUS");
       setRemainingSeconds(25 * 60);
     }
@@ -417,6 +448,28 @@ export function FocusPageClient() {
                 Paused
               </Badge>
             )}
+
+            {/* Alarm Sound Toggle Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleToggleSound}
+              className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground gap-1.5 rounded-full border-border/60"
+              title={soundEnabled ? "Timer alarm sound is ON — click to mute" : "Timer alarm sound is MUTED — click to unmute"}
+            >
+              {soundEnabled ? (
+                <>
+                  <Volume2 className="size-3 text-primary" />
+                  <span className="text-[11px] font-medium">Alarm Sound ON</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="size-3 text-muted-foreground" />
+                  <span className="text-[11px] font-medium">Alarm Sound Muted</span>
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Circular Countdown Ring */}

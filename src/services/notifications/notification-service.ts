@@ -1,3 +1,5 @@
+import { alarmService } from "@/services/audio/alarm-service";
+
 export type NotificationType =
   | "PrayerReminder"
   | "HabitReminder"
@@ -77,15 +79,35 @@ class BrowserNotificationProvider implements NotificationProvider {
       return false;
     }
     try {
+      if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && "showNotification" in reg) {
+          await reg.showNotification(title, {
+            icon: "/icons/icon-192.png",
+            badge: "/icons/icon.svg",
+            ...options,
+          });
+          return true;
+        }
+      }
       new Notification(title, {
         icon: "/icons/icon-192.png",
         badge: "/icons/icon.svg",
         ...options,
       });
       return true;
-    } catch (err) {
-      console.warn("Browser notification failed to display:", err);
-      return false;
+    } catch {
+      try {
+        new Notification(title, {
+          icon: "/icons/icon-192.png",
+          badge: "/icons/icon.svg",
+          ...options,
+        });
+        return true;
+      } catch (err) {
+        console.warn("Browser notification failed to display:", err);
+        return false;
+      }
     }
   }
 }
@@ -232,12 +254,61 @@ export class NotificationService {
     sessionTitle: string,
     minutes: number,
   ): Promise<boolean> {
+    alarmService.playFocusCompleteAlarm();
+
     const prefs = this.getPreferences();
     if (!prefs.enabled || !prefs.categories.FocusReminder) return false;
 
     return this.provider.send(`Focus Session Complete!`, {
       body: `Alhamdulillah! You completed ${minutes} minutes on ${sessionTitle}. Take a break and prepare for prayer.`,
       tag: `focus-complete-${sessionTitle}`,
+    });
+  }
+
+  async triggerPrayerNotification(
+    prayerName: string,
+    prayerTimeStr: string,
+  ): Promise<boolean> {
+    alarmService.playPrayerAlarm();
+
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.PrayerReminder) return false;
+
+    return this.provider.send(`${prayerName} Prayer Time`, {
+      body: `Time for ${prayerName} Salah (${prayerTimeStr}). Hayya 'ala-s-Salah.`,
+      tag: `prayer-${prayerName.toLowerCase()}-${new Date().toISOString().slice(0, 10)}`,
+    });
+  }
+
+  async triggerTaskReminderNotification(
+    taskTitle: string,
+    dueTimeStr?: string,
+  ): Promise<boolean> {
+    alarmService.playReminderAlarm();
+
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.TaskReminder) return false;
+
+    return this.provider.send(`Task Reminder`, {
+      body: dueTimeStr
+        ? `"${taskTitle}" is due at ${dueTimeStr}.`
+        : `Time to work on your task: "${taskTitle}".`,
+      tag: `task-${encodeURIComponent(taskTitle)}`,
+    });
+  }
+
+  async triggerUserReminderNotification(
+    reminderTitle: string,
+    description?: string | null,
+  ): Promise<boolean> {
+    alarmService.playReminderAlarm();
+
+    const prefs = this.getPreferences();
+    if (!prefs.enabled) return false;
+
+    return this.provider.send(reminderTitle, {
+      body: description || "Scheduled Istiqamaah reminder.",
+      tag: `reminder-${encodeURIComponent(reminderTitle)}`,
     });
   }
 
