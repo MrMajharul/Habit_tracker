@@ -323,6 +323,14 @@ export function QuranAudioPlayer({
   };
 
   const handleError = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Ignore aborted loads (code 1) caused by user navigation or changing tracks
+    if (audio.error && audio.error.code === 1) {
+      return;
+    }
+
     setIsLoading(false);
     setIsPlaying(false);
     // Switch to fallback CDN if primary fails
@@ -330,9 +338,8 @@ export function QuranAudioPlayer({
     if (fallback && !audioSrc.includes(fallback) && !triedFallbackRef.current) {
       triedFallbackRef.current = true;
       setAudioSrc(fallback);
-      if (audioRef.current) {
-        audioRef.current.src = fallback;
-      }
+      audio.src = fallback;
+      audio.load();
     } else {
       setError("Audio stream unavailable. Please check your network connection.");
     }
@@ -391,7 +398,7 @@ export function QuranAudioPlayer({
       {/* Declarative HTML5 Audio Element in DOM tree */}
       <audio
         ref={audioRef}
-        src={audioSrc || undefined}
+        src={audioSrc || getSurahAudioUrls(currentSurah.number, selectedReciterId).primary}
         preload="metadata"
         playsInline
         onPlay={() => {
