@@ -42,6 +42,7 @@ export const RECITERS: Reciter[] = [
     arabicName: "أبو بكر الشاطري",
     style: "Murattal",
     baseUrl: "https://download.quranicaudio.com/quran/abu_bakr_ash-shaatree",
+    fallbackPattern: (s: number) => `https://cdn.mp3quran.net/audio/abubakr-shatri/r1/${formatSurahAudioNumber(s)}.mp3`,
   },
 ];
 
@@ -128,6 +129,30 @@ export async function isSurahAudioCached(
     return false;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Retrieves a cached Surah audio as a Blob for offline playback
+ */
+export async function getCachedSurahAudioBlob(
+  surahNumber: number,
+  reciterId = DEFAULT_RECITER_ID,
+): Promise<Blob | null> {
+  if (typeof window === "undefined" || !("caches" in window)) return null;
+  try {
+    const cache = await caches.open(AUDIO_CACHE_NAME);
+    const { primary, fallback } = getSurahAudioUrls(surahNumber, reciterId);
+    let response = await cache.match(primary);
+    if (!response && fallback) {
+      response = await cache.match(fallback);
+    }
+    if (response) {
+      return await response.blob();
+    }
+    return null;
+  } catch {
+    return null;
   }
 }
 

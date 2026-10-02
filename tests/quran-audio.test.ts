@@ -5,6 +5,7 @@ import {
   DEFAULT_RECITER_ID,
   downloadSurahAudio,
   formatSurahAudioNumber,
+  getCachedSurahAudioBlob,
   getCachedSurahNumbers,
   getSavedAudioState,
   getSurahAudioUrls,
@@ -148,11 +149,19 @@ describe("Quran Audio Service", () => {
       const cached = await isSurahAudioCached(1, DEFAULT_RECITER_ID);
       expect(cached).toBe(true);
 
-      // 3. Get cached numbers
+      // 3. Get cached blob for offline playback
+      const mockBlob = new Blob(["audio-data"], { type: "audio/mpeg" });
+      mockMatch.mockResolvedValueOnce({
+        blob: vi.fn().mockResolvedValue(mockBlob),
+      });
+      const blob = await getCachedSurahAudioBlob(1, DEFAULT_RECITER_ID);
+      expect(blob).toBeTruthy();
+
+      // 4. Get cached numbers
       const cachedNumbers = await getCachedSurahNumbers(DEFAULT_RECITER_ID);
       expect(cachedNumbers).toContain(1);
 
-      // 4. Remove
+      // 5. Remove
       const removed = await removeDownloadedSurahAudio(1, DEFAULT_RECITER_ID);
       expect(removed).toBe(true);
       expect(mockDelete).toHaveBeenCalled();

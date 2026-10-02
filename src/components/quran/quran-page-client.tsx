@@ -935,6 +935,10 @@ export function QuranPageClient() {
     };
   }, [selectedSurah]);
 
+  const handleSelectSurah = useCallback((next: number) => {
+    setSelectedSurah(next);
+  }, []);
+
   if (!progress) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -948,14 +952,14 @@ export function QuranPageClient() {
       <QuranReader
         surahNumber={selectedSurah}
         onBack={() => setSelectedSurah(null)}
-        onSelectSurah={(next) => setSelectedSurah(next)}
+        onSelectSurah={handleSelectSurah}
       />
     );
   }
 
   return (
     <div className="space-y-6">
-      <SurahBrowser onSelectSurah={setSelectedSurah} progress={progress} />
+      <SurahBrowser onSelectSurah={handleSelectSurah} progress={progress} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <DailyTargetCard progress={progress} />
