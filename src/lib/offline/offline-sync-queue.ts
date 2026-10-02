@@ -25,7 +25,11 @@ export type OfflineActionType =
   | "delete_dhikr_favorite"
   | "save_ramadan_settings"
   | "save_ramadan_daily_log"
-  | "save_ramadan_goal";
+  | "save_ramadan_goal"
+  // Post-Beta: Reminders
+  | "create_reminder"
+  | "update_reminder"
+  | "delete_reminder";
 
 export interface OfflineAction {
   id: string;
@@ -213,6 +217,34 @@ export async function flushOfflineQueue(): Promise<{
         successCount++;
       } else if (item.type === "LOG_PRAYER") {
         const { prayer, completed, dateStr } = item.payload;
+
+        // ── Re-validate prayer timing at flush time ───────────────────
+        // If the action was queued before the prayer time started,
+        // silently drop it rather than syncing invalid data.
+        if (completed) {
+          try {
+            const { validatePrayerCompletion } = await import(
+              "@/services/prayer/prayer-log-service"
+            );
+            const validation = await validatePrayerCompletion(
+              prayer,
+              completed,
+              dateStr,
+            );
+            if (!validation.valid) {
+              console.warn(
+                `Offline prayer log rejected at flush: ${validation.reason}`,
+              );
+              // Drop this invalid action (don't re-queue)
+              successCount++;
+              continue;
+            }
+          } catch {
+            // If validation fails, allow the sync to proceed
+            // (fail-open to avoid blocking the queue permanently)
+          }
+        }
+
         if (completed) {
           await supabase.from("prayer_logs").upsert(
             {
@@ -386,6 +418,28 @@ export async function flushOfflineQueue(): Promise<{
           user_id: user.id,
           updated_at: new Date().toISOString(),
         });
+        successCount++;
+      } else if (item.type === "create_reminder") {
+        await supabase.from("user_reminders").upsert({
+          ...item.payload,
+          user_id: user.id,
+          updated_at: new Date().toISOString(),
+        });
+        successCount++;
+      } else if (item.type === "update_reminder") {
+        const { id, updates } = item.payload;
+        await supabase
+          .from("user_reminders")
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "delete_reminder") {
+        await supabase
+          .from("user_reminders")
+          .delete()
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
         successCount++;
       }
     } catch (err) {

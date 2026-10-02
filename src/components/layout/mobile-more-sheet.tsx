@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { moreNavItems } from "@/features/navigation/nav-items";
+import { ProfileButton } from "@/components/profile/profile-button";
 
 export function MobileMoreSheet() {
   const pathname = usePathname();
@@ -50,6 +51,9 @@ export function MobileMoreSheet() {
           <SheetTitle>More</SheetTitle>
           <SheetDescription>Explore all sections of the app</SheetDescription>
         </SheetHeader>
+        <div className="mt-3">
+          <ProfileButton onClick={() => setOpen(false)} />
+        </div>
         <div className="mt-4 grid grid-cols-2 gap-2 overflow-y-auto pb-8">
           {moreNavItems.map((item) => {
             const Icon = item.icon;

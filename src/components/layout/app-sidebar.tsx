@@ -12,6 +12,7 @@ import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { mainNavItems } from "@/features/navigation/nav-items";
+import { ProfileButton } from "@/components/profile/profile-button";
 
 import { useState } from "react";
 
@@ -83,7 +84,8 @@ export function AppSidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3 space-y-2">
-        <div className="flex items-center justify-between px-2">
+        <ProfileButton />
+        <div className="flex items-center justify-between px-2 pt-1 border-t border-sidebar-border/60">
           <p className="text-xs text-muted-foreground">Appearance</p>
           <ThemeToggle />
         </div>

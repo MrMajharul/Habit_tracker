@@ -50,9 +50,11 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { FaqDialog } from "@/components/settings/faq-dialog";
 import { FeedbackDialog } from "@/components/settings/feedback-dialog";
+import { ReminderSettingsDialog } from "@/components/settings/reminder-settings-dialog";
 import {
   formatDiagnosticsSummary,
   getSystemDiagnostics,
+  SUPPORT_EMAIL,
 } from "@/services/feedback/feedback-service";
 
 interface SettingsProfile {
@@ -380,14 +382,15 @@ export function SettingsPageClient() {
   );
 
   React.useEffect(() => {
-    if (mounted) {
+    if (!mounted) return;
+    Promise.resolve().then(() => {
       setSystemDiagnostics(getSystemDiagnostics());
-    }
+    });
   }, [mounted]);
 
   const handleCopySupportEmail = async () => {
     try {
-      await navigator.clipboard.writeText("support@istiqamaah.app");
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
       setCopiedEmail(true);
       toast.success("Support email copied to clipboard!");
       setTimeout(() => setCopiedEmail(false), 2000);
@@ -660,13 +663,18 @@ export function SettingsPageClient() {
         </h2>
         <Card>
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Bell className="size-4 text-primary" />
-              <CardTitle className="text-base">Prayer & Habit Reminders</CardTitle>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Bell className="size-4 text-primary" />
+                  <CardTitle className="text-base">Prayer & Habit Reminders</CardTitle>
+                </div>
+                <CardDescription className="mt-1">
+                  Toggle discrete notifications and manage custom alarms.
+                </CardDescription>
+              </div>
+              <ReminderSettingsDialog />
             </div>
-            <CardDescription>
-              Toggle discrete notifications designed never to spam you.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {[
@@ -873,7 +881,7 @@ export function SettingsPageClient() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium">Official Support Email</p>
                     <Badge variant="secondary" className="text-[10px] text-muted-foreground font-mono">
-                      support@istiqamaah.app
+                      {SUPPORT_EMAIL}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -892,7 +900,7 @@ export function SettingsPageClient() {
                   <span>{copiedEmail ? "Copied" : "Copy Email"}</span>
                 </Button>
                 <a
-                  href="mailto:support@istiqamaah.app?subject=[Support%20Inquiry]%20Istiqamaah%20App"
+                  href={`mailto:${SUPPORT_EMAIL}?subject=[Support%20Inquiry]%20Istiqamaah%20App`}
                   className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-8 gap-1.5 text-xs")}
                 >
                   <Mail className="size-3.5" />

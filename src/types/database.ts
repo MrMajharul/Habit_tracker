@@ -650,6 +650,42 @@ type RamadanGoalInsert = {
   updated_at?: string;
 };
 
+// ─── Post-Beta: User Reminders ─────────────────────────────────────────────
+
+type UserReminderRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  reminder_type: string;
+  time: string;
+  repeat_type: string;
+  days_of_week: number[];
+  is_enabled: boolean;
+  sound_enabled: boolean;
+  vibration_enabled: boolean;
+  target_url: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type UserReminderInsert = {
+  id?: string;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  reminder_type?: string;
+  time: string;
+  repeat_type?: string;
+  days_of_week?: number[];
+  is_enabled?: boolean;
+  sound_enabled?: boolean;
+  vibration_enabled?: boolean;
+  target_url?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 export type Database = {
@@ -786,6 +822,12 @@ export type Database = {
         Row: RamadanGoalRow;
         Insert: RamadanGoalInsert;
         Update: Partial<RamadanGoalInsert>;
+        Relationships: [];
+      };
+      user_reminders: {
+        Row: UserReminderRow;
+        Insert: UserReminderInsert;
+        Update: Partial<UserReminderInsert>;
         Relationships: [];
       };
     };

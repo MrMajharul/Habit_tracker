@@ -69,12 +69,13 @@ export function FeedbackDialog({ userEmail = "", userName = "" }: FeedbackDialog
   const [submissions, setSubmissions] = React.useState<FeedbackSubmission[]>([]);
 
   React.useEffect(() => {
-    if (open) {
+    if (!open) return;
+    Promise.resolve().then(() => {
       setSubmissions(getStoredFeedbacks());
       if (userEmail && !email) {
         setEmail(userEmail);
       }
-    }
+    });
   }, [open, userEmail, email]);
 
   const diagnostics = React.useMemo(() => {

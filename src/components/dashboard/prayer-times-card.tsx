@@ -98,7 +98,15 @@ export function PrayerTimesCard({ summary }: PrayerTimesCardProps) {
       toast.message(`${label} unmarked`);
     }
 
-    await togglePrayerCompletion(prayer, nextState);
+    try {
+      await togglePrayerCompletion(prayer, nextState);
+    } catch {
+      // Service-layer validation rejected — roll back optimistic update
+      setCompletedMap((prev) => ({ ...prev, [prayer]: !nextState }));
+      toast.warning(`${label} hasn't started yet`, {
+        description: "Please wait for the prayer time to begin.",
+      });
+    }
   };
 
   return (

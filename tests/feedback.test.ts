@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   CATEGORY_METADATA,
+  SUPPORT_EMAIL,
   buildSupportMailtoLink,
   clearStoredFeedbacks,
   formatDiagnosticsSummary,
@@ -97,7 +98,7 @@ describe("Feedback and Support Service", () => {
       userEmail: "test@example.com",
     });
 
-    expect(mailto.startsWith("mailto:support@istiqamaah.app?subject=")).toBe(true);
+    expect(mailto.startsWith(`mailto:${SUPPORT_EMAIL}?subject=`)).toBe(true);
     expect(mailto).toContain(encodeURIComponent("[Bug Report] Prayer time issue"));
     expect(mailto).toContain(encodeURIComponent("Fajr calculation is off by 2 minutes."));
   });

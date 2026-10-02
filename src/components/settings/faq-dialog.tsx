@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SUPPORT_EMAIL } from "@/services/feedback/feedback-service";
 
 interface FAQItem {
   question: string;
@@ -182,11 +183,11 @@ export function FaqDialog() {
             <div className="text-left text-xs">
               <p className="font-semibold text-foreground">Still need assistance?</p>
               <p className="text-muted-foreground text-[11px]">
-                Email our support team directly at support@istiqamaah.app
+                Email our support team directly at {SUPPORT_EMAIL}
               </p>
             </div>
             <a
-              href="mailto:support@istiqamaah.app?subject=[Support%20Inquiry]%20Istiqamaah%20Help"
+              href={`mailto:${SUPPORT_EMAIL}?subject=[Support%20Inquiry]%20Istiqamaah%20Help`}
               className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
             >
               <Mail className="size-3.5" />

@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { AppLogo } from "@/components/ui/app-logo";
+import { ProfileButton } from "@/components/profile/profile-button";
 
 export const metadata: Metadata = {
   robots: {
@@ -24,7 +25,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Link href="/dashboard" className="flex items-center gap-2">
             <AppLogo size="sm" />
           </Link>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <ProfileButton compact />
+          </div>
         </header>
 
         <main className="flex-1 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-8 min-w-0 max-w-full">

@@ -1,10 +1,12 @@
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 import { isDevAuthBypass, isSupabaseConfigured } from "@/lib/constants";
 import { enqueueOfflineAction } from "@/lib/offline/offline-sync-queue";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 import type { PrayerName } from "./types";
+import { AdhanPrayerProvider } from "./adhan-prayer-provider";
+import { getLocalPrayerSettings } from "./prayer-settings-service";
 
 const PRAYER_LOGS_PREFIX = "istiqamaah_prayer_logs_";
 const LEGACY_PRAYER_LOGS_PREFIX = "noorpath_prayer_logs_";
@@ -103,11 +105,87 @@ export async function fetchPrayerLogs(
   }
 }
 
+// ─── Prayer Timing Validation ───────────────────────────────────────────────
+// Validates that a prayer can only be marked completed at or after its
+// calculated start time. Uses the same prayer calculation engine (adhan)
+// and user settings as the rest of the app.
+
+export interface PrayerValidationResult {
+  valid: boolean;
+  reason?: string;
+  prayerStartTime?: Date;
+}
+
+/**
+ * Validates whether a prayer can be marked as completed at the given time.
+ * Returns { valid: true } if the prayer's start time has arrived,
+ * or { valid: false, reason: "..." } if it hasn't.
+ *
+ * Uncompleting (unmarking) a prayer is always allowed.
+ */
+export async function validatePrayerCompletion(
+  prayer: PrayerName,
+  completed: boolean,
+  dateStr: string,
+  now: Date = new Date(),
+): Promise<PrayerValidationResult> {
+  // Uncompleting is always allowed
+  if (!completed) {
+    return { valid: true };
+  }
+
+  try {
+    const settings = getLocalPrayerSettings();
+    const provider = new AdhanPrayerProvider();
+
+    // Parse the date string to get the correct calendar day
+    const targetDate = parse(dateStr, "yyyy-MM-dd", new Date());
+
+    const summary = await provider.getPrayerTimes(settings, targetDate);
+    const prayerData = summary.prayers.find((p) => p.name === prayer);
+
+    if (!prayerData) {
+      return { valid: false, reason: `Unknown prayer: ${prayer}` };
+    }
+
+    const prayerTime = prayerData.time instanceof Date
+      ? prayerData.time
+      : new Date(prayerData.time);
+
+    if (now.getTime() < prayerTime.getTime()) {
+      return {
+        valid: false,
+        reason: `${prayer} has not started yet. It begins at ${format(prayerTime, "HH:mm")}.`,
+        prayerStartTime: prayerTime,
+      };
+    }
+
+    return { valid: true, prayerStartTime: prayerTime };
+  } catch (err) {
+    // If prayer calculation fails entirely, log but allow the action
+    // to avoid blocking the user due to a calculation error.
+    // The UI-level check is the primary guard; this is the secondary guard.
+    console.warn("Prayer time validation failed, allowing action:", err);
+    return { valid: true };
+  }
+}
+
 export async function togglePrayerCompletion(
   prayer: PrayerName,
   completed: boolean,
   dateStr = getTodayDateString(),
 ): Promise<void> {
+  // ── Service-layer timing validation ──────────────────────────────────
+  // Prevents marking a prayer complete before its calculated start time,
+  // even if the UI check was bypassed.
+  if (completed) {
+    const validation = await validatePrayerCompletion(prayer, completed, dateStr);
+    if (!validation.valid) {
+      console.warn(`Prayer completion rejected: ${validation.reason}`);
+      throw new Error(validation.reason || "Prayer time has not started yet.");
+    }
+  }
+
   let userId: string | undefined;
   if (isSupabaseConfigured && !isDevAuthBypass && typeof window !== "undefined") {
     try {
@@ -130,7 +208,7 @@ export async function togglePrayerCompletion(
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     enqueueOfflineAction({
       type: "LOG_PRAYER",
-      payload: { prayer, completed, dateStr },
+      payload: { prayer, completed, dateStr, queuedAt: Date.now() },
     });
     return;
   }
@@ -171,7 +249,8 @@ export async function togglePrayerCompletion(
     console.warn("Failed to sync prayer log to Supabase, queuing offline:", err);
     enqueueOfflineAction({
       type: "LOG_PRAYER",
-      payload: { prayer, completed, dateStr },
+      payload: { prayer, completed, dateStr, queuedAt: Date.now() },
     });
   }
 }
+

@@ -14,6 +14,8 @@ import { getDashboardData } from "@/services/dashboard/dashboard-service";
 import { hadithService } from "@/services/hadith/hadith-service";
 import { getPrayerDaySummary } from "@/services/prayer";
 import { suggestionEngine } from "@/services/suggestions/suggestion-engine";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const dynamic = "force-dynamic";
 
@@ -22,43 +24,39 @@ export const metadata = {
   description: "Plan your day around Salah, build better habits, and make time for what matters.",
 };
 
-async function DashboardContent() {
-  const [dashboard, prayerSummary, hadith] = await Promise.all([
+// ─── Critical Content: Greeting + Prayer + Progress ─────────────────────────
+// This renders first — the user sees the greeting, prayer times, and progress
+// without waiting for hadith, suggestions, or secondary content.
+async function CriticalContent() {
+  const [dashboard, prayerSummary] = await Promise.all([
     getDashboardData(),
     getPrayerDaySummary({ timezone: "Asia/Dhaka" }),
-    hadithService.getHadithOfTheDay(),
   ]);
 
-  const suggestions = await suggestionEngine.generateSuggestions({
-    nextPrayerName: prayerSummary.nextPrayer?.name ?? "Asr",
-    nextPrayerTime: prayerSummary.nextPrayer?.time,
-    userHabits: dashboard.habits.map((h) => ({
-      name: h.name,
-      prayerAnchor: h.prayerAnchor,
-      completed: h.completed,
-      icon: h.icon,
-    })),
-    pendingTasks: dashboard.tasks.map((t) => ({
-      title: t.title,
-      subject: t.subject,
-      estimatedMinutes: t.estimatedMinutes,
-    })),
-  });
-
   return (
-    <div className="space-y-6">
+    <>
       <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
         <div className="space-y-6 lg:col-span-2">
           <GreetingSection profile={dashboard.profile} />
           <div className="lg:hidden">
-            <HadithOfTheDay hadith={hadith} compact />
+            <Suspense fallback={<HadithSkeleton />}>
+              <HadithSection compact />
+            </Suspense>
           </div>
           <PrayerTimesCard summary={prayerSummary} />
-          <SmartSuggestionsCard suggestion={suggestions} />
+          <Suspense fallback={<SuggestionsSkeleton />}>
+            <SuggestionsSection
+              prayerSummary={prayerSummary}
+              habits={dashboard.habits}
+              tasks={dashboard.tasks}
+            />
+          </Suspense>
         </div>
 
         <div className="hidden lg:block lg:sticky lg:top-6">
-          <HadithOfTheDay hadith={hadith} />
+          <Suspense fallback={<HadithSkeleton />}>
+            <HadithSection />
+          </Suspense>
         </div>
       </div>
 
@@ -77,14 +75,84 @@ async function DashboardContent() {
           completedSessionsToday={Math.floor(dashboard.progress.focusMinutesToday / 25)}
         />
       </div>
-    </div>
+    </>
+  );
+}
+
+// ─── Deferred: Hadith of the Day (loaded progressively) ─────────────────────
+async function HadithSection({ compact }: { compact?: boolean }) {
+  const hadith = await hadithService.getHadithOfTheDay();
+  return <HadithOfTheDay hadith={hadith} compact={compact} />;
+}
+
+// ─── Deferred: Smart Suggestions (depends on prayer + dashboard data) ────────
+async function SuggestionsSection({
+  prayerSummary,
+  habits,
+  tasks,
+}: {
+  prayerSummary: Awaited<ReturnType<typeof getPrayerDaySummary>>;
+  habits: Awaited<ReturnType<typeof getDashboardData>>["habits"];
+  tasks: Awaited<ReturnType<typeof getDashboardData>>["tasks"];
+}) {
+  const suggestions = await suggestionEngine.generateSuggestions({
+    nextPrayerName: prayerSummary.nextPrayer?.name ?? "Asr",
+    nextPrayerTime: prayerSummary.nextPrayer?.time,
+    userHabits: habits.map((h) => ({
+      name: h.name,
+      prayerAnchor: h.prayerAnchor,
+      completed: h.completed,
+      icon: h.icon,
+    })),
+    pendingTasks: tasks.map((t) => ({
+      title: t.title,
+      subject: t.subject,
+      estimatedMinutes: t.estimatedMinutes,
+    })),
+  });
+
+  return <SmartSuggestionsCard suggestion={suggestions} />;
+}
+
+// ─── Mini Skeletons for deferred sections ───────────────────────────────────
+function HadithSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-5 w-40" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function SuggestionsSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-5 w-44" />
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <div className="flex gap-2 pt-2">
+          <Skeleton className="h-8 w-20 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardContent />
-    </Suspense>
+    <div className="space-y-6">
+      <Suspense fallback={<DashboardSkeleton />}>
+        <CriticalContent />
+      </Suspense>
+    </div>
   );
 }

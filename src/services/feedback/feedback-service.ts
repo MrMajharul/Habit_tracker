@@ -39,7 +39,7 @@ export interface FeedbackSubmission {
 }
 
 const FEEDBACK_STORAGE_KEY = "istiqamaah_user_feedback";
-const SUPPORT_EMAIL = "support@istiqamaah.app";
+export const SUPPORT_EMAIL = "support.istiqamaah@gmail.com";
 
 export const CATEGORY_METADATA: Record<
   FeedbackCategory,

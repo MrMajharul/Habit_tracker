@@ -206,7 +206,7 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-bold text-foreground">8. Contact Us</h2>
             <p className="text-muted-foreground">
               For any questions regarding this Privacy Policy or your data, please contact the maintainers
-              at <code className="text-xs bg-muted px-1.5 py-0.5 rounded">support@istiqamaah.app</code>.
+              at <code className="text-xs bg-muted px-1.5 py-0.5 rounded">support.istiqamaah@gmail.com</code>.
             </p>
           </section>
         </div>

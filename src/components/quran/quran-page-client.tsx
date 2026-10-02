@@ -33,6 +33,7 @@ import { quranService } from "@/services/quran/quran-service";
 import { quranBookmarkService } from "@/services/quran/quran-bookmark-service";
 import { quranGoalService } from "@/services/quran/quran-goal-service";
 import { quranProgressService } from "@/services/quran/quran-progress-service";
+import { QuranAudioPlayer } from "@/components/quran/quran-audio-player";
 import type {
   SurahInfo,
   AyahWithTranslation,
@@ -532,6 +533,14 @@ function QuranReader({
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {/* Audio Recitation Player */}
+          {surah && (
+            <QuranAudioPlayer
+              currentSurah={surah}
+              onSelectSurah={onSelectSurah}
+            />
           )}
 
           {/* Ayah list */}

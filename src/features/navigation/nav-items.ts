@@ -26,13 +26,13 @@ export interface NavItem {
 
 export const mainNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: Home, mobileLabel: "Home", showInMobile: true },
-  { title: "Prayer", href: "/prayer", icon: Sparkles, showInMobile: true },
+  { title: "Prayer", href: "/prayer", icon: Sparkles, mobileLabel: "Prayer", showInMobile: true },
+  { title: "Qur'an", href: "/quran", icon: BookOpen, mobileLabel: "Qur'an", showInMobile: true },
   { title: "Tasks", href: "/tasks", icon: CheckSquare, mobileLabel: "Tasks", showInMobile: true },
   { title: "Habits", href: "/habits", icon: CheckSquare, mobileLabel: "Habits", showInMore: true },
   { title: "Study & Work", href: "/study", icon: BookMarked, showInMore: true },
   { title: "Subjects", href: "/subjects", icon: Layers, showInMore: true },
-  { title: "Focus", href: "/focus", icon: Clock, mobileLabel: "Focus", showInMobile: true },
-  { title: "Qur'an", href: "/quran", icon: BookOpen, showInMore: true },
+  { title: "Focus", href: "/focus", icon: Clock, showInMore: true },
   { title: "Hadith", href: "/hadith", icon: ScrollText, showInMore: true },
   { title: "Dhikr", href: "/dhikr", icon: Moon, showInMore: true },
   { title: "Duas", href: "/duas", icon: HandHeart, showInMore: true },

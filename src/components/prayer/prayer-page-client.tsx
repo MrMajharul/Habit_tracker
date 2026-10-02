@@ -224,18 +224,34 @@ export function PrayerPageClient({ summary: initialSummary }: PrayerPageClientPr
       return next;
     });
 
-    // Update in service
-    await togglePrayerCompletion(prayerName, isNowCompleted);
+    try {
+      // Update in service (may throw if service-layer timing validation fails)
+      await togglePrayerCompletion(prayerName, isNowCompleted);
 
-    // Refresh summary
-    const updatedSummary = await getPrayerDaySummary(
-      settings,
-      new Date(),
-      isNowCompleted
-        ? [...Array.from(completedPrayers), prayerName]
-        : Array.from(completedPrayers).filter((p) => p !== prayerName),
-    );
-    setSummary(updatedSummary);
+      // Refresh summary
+      const updatedSummary = await getPrayerDaySummary(
+        settings,
+        new Date(),
+        isNowCompleted
+          ? [...Array.from(completedPrayers), prayerName]
+          : Array.from(completedPrayers).filter((p) => p !== prayerName),
+      );
+      setSummary(updatedSummary);
+    } catch {
+      // Service-layer validation rejected — roll back optimistic update
+      setCompletedPrayers((prev) => {
+        const next = new Set(prev);
+        if (isNowCompleted) {
+          next.delete(prayerName);
+        } else {
+          next.add(prayerName);
+        }
+        return next;
+      });
+      toast.warning(`${prayerName.charAt(0).toUpperCase() + prayerName.slice(1)} hasn't started yet`, {
+        description: "Please wait for the prayer time to begin.",
+      });
+    }
   };
 
   const handleSaveSettings = async (newSettings: PrayerSettingsState) => {

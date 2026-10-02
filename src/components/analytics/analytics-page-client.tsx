@@ -55,6 +55,7 @@ import {
   analyticsService,
   clearAnalyticsMemo,
 } from "@/services/analytics/analytics-service";
+import { generatePersonalInsights } from "@/services/analytics/analytics-insights-service";
 import type {
   AnalyticsPeriodPreset,
   AnalyticsSummary,
@@ -73,6 +74,7 @@ type ActiveTab =
   | "focus"
   | "goals"
   | "reflections"
+  | "insights"
   | "heatmap"
   | "reviews";
 
@@ -86,6 +88,7 @@ const TABS: Array<{ id: ActiveTab; label: string; icon: typeof BarChart3 }> = [
   { id: "focus", label: "Focus", icon: Clock },
   { id: "goals", label: "Goals", icon: Target },
   { id: "reflections", label: "Reflections", icon: Heart },
+  { id: "insights", label: "Insights", icon: Lightbulb },
   { id: "heatmap", label: "Heatmap", icon: Calendar },
   { id: "reviews", label: "Reviews", icon: BarChart3 },
 ];
@@ -879,6 +882,111 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* TAB: INSIGHTS */}
+          {activeTab === "insights" && (
+            <div className="space-y-6">
+              {/* Header Note */}
+              <Card className="border-primary/20 bg-linear-to-br from-card to-primary/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="size-5 text-primary" />
+                    <CardTitle className="text-base font-bold">
+                      Deterministic Personal Insights
+                    </CardTitle>
+                  </div>
+                  <CardDescription className="text-xs">
+                    Objective observations computed from your personal logs for{" "}
+                    <span className="font-semibold text-foreground">
+                      {formatRangeLabel(summary.range.startDate, summary.range.endDate)}
+                    </span>
+                    . No religious score, no worship ranking, and no artificial intelligence synthesis.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Insights List */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {generatePersonalInsights(summary).map((item) => (
+                  <Card key={item.id} className="border-border/80 shadow-2xs">
+                    <CardContent className="flex items-start gap-3 p-4">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary mt-0.5">
+                        <Sparkles className="size-4" />
+                      </div>
+                      <p className="text-sm font-medium leading-relaxed text-foreground/90">
+                        {item.text}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Habit & Focus Consistency Distribution */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <CheckSquare className="size-4 text-primary" />
+                      Habit Target Consistency
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {summary.habits.habits.length > 0
+                        ? `${summary.habits.completionRate}% average across ${summary.habits.habits.length} habits`
+                        : "No habits tracked in this period"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {summary.habits.habits.slice(0, 4).map((h) => (
+                      <div key={h.habitId} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium truncate">{h.name}</span>
+                          <span className="font-mono text-muted-foreground">{h.completionRate}%</span>
+                        </div>
+                        <Progress value={h.completionRate} className="h-1.5" />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Clock className="size-4 text-primary" />
+                      Focus Time Concentration
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {summary.focus.completedSessions > 0
+                        ? `${formatMinutes(summary.focus.totalMinutes)} across ${summary.focus.completedSessions} sessions`
+                        : "No focus sessions logged in this range"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {summary.focus.bySubject.slice(0, 4).map((s) => (
+                      <div key={s.name} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium truncate">{s.name}</span>
+                          <span className="font-mono text-muted-foreground">{formatMinutes(s.minutes)}</span>
+                        </div>
+                        <Progress
+                          value={summary.focus.totalMinutes > 0 ? (s.minutes / summary.focus.totalMinutes) * 100 : 0}
+                          className="h-1.5"
+                        />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Privacy & Methodology Guarantee */}
+              <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-muted/20 p-3.5 text-xs text-muted-foreground">
+                <Shield className="size-4 shrink-0 mt-0.5 text-primary" />
+                <p className="leading-relaxed">
+                  <strong className="text-foreground font-semibold">Privacy First:</strong>{" "}
+                  Istiqamah strictly rejects worship gamification and religious ranking. All observations are deterministic reflections of your schedule and habit activity to help you maintain consistency.
+                </p>
+              </div>
             </div>
           )}
 

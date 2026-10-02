@@ -95,3 +95,52 @@ self.addEventListener("fetch", (event) => {
       })
   );
 });
+
+// ─── Push Notification Handler ──────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  try {
+    const payload = event.data.json();
+    const title = payload.title || "Istiqamah Reminder";
+    const options = {
+      body: payload.body || "Time to return to what matters.",
+      icon: payload.icon || "/icons/icon-192.png",
+      badge: payload.badge || "/icons/icon.svg",
+      tag: payload.tag || "istiqamaah-reminder",
+      vibrate: payload.vibrate || [100, 50, 100],
+      data: {
+        url: payload.url || "/dashboard",
+        timestamp: Date.now(),
+      },
+      renotify: true,
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (err) {
+    console.warn("Failed to parse push notification payload:", err);
+  }
+});
+
+// ─── Notification Click Handler ─────────────────────────────────────────────
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const targetUrl = event.notification.data?.url || "/dashboard";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          if ("navigate" in client) {
+            client.navigate(targetUrl);
+          }
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
