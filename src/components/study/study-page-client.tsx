@@ -116,11 +116,23 @@ export function StudyPageClient() {
     loadData();
   };
 
-  const filteredTasks = tasks.filter((t) => {
-    if (activeSubjectId && t.subjectId !== activeSubjectId) return false;
-    if (statusFilter !== "ALL" && t.status !== statusFilter) return false;
-    return true;
-  });
+  const filteredTasks = tasks
+    .filter((t) => {
+      if (activeSubjectId && t.subjectId !== activeSubjectId) return false;
+      if (statusFilter !== "ALL" && t.status !== statusFilter) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.dueDate && b.dueDate) {
+        const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        if (diff !== 0) return diff;
+      } else if (a.dueDate && !b.dueDate) {
+        return -1;
+      } else if (!a.dueDate && b.dueDate) {
+        return 1;
+      }
+      return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" });
+    });
 
   const completedToday = tasks.filter((t) => t.status === "COMPLETED").length;
   const totalMinutes = tasks
@@ -282,10 +294,11 @@ export function StudyPageClient() {
             </CardContent>
           </Card>
         ) : (
-          filteredTasks.map((task) => (
+          filteredTasks.map((task, idx) => (
             <TaskCard
               key={task.id}
               task={task}
+              index={idx}
               onToggle={handleToggleTask}
               onEdit={(t) => {
                 setTaskToEdit(t);

@@ -53,7 +53,19 @@ export function SubjectDetail({
   const [tab, setTab] = useState<"tasks" | "sessions">("tasks");
   const IconComponent = SUBJECT_ICON_MAP[subject.icon] || Clock;
 
-  const subjectTasks = tasks.filter((t) => t.subjectId === subject.id);
+  const subjectTasks = tasks
+    .filter((t) => t.subjectId === subject.id)
+    .sort((a, b) => {
+      if (a.dueDate && b.dueDate) {
+        const diff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        if (diff !== 0) return diff;
+      } else if (a.dueDate && !b.dueDate) {
+        return -1;
+      } else if (!a.dueDate && b.dueDate) {
+        return 1;
+      }
+      return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" });
+    });
   const completedTasks = subjectTasks.filter((t) => t.status === "COMPLETED");
   const activeTasks = subjectTasks.filter((t) => t.status !== "COMPLETED");
 
@@ -264,10 +276,11 @@ export function SubjectDetail({
             </Card>
           ) : (
             <div className="space-y-2.5">
-              {subjectTasks.map((task) => (
+              {subjectTasks.map((task, idx) => (
                 <TaskCard
                   key={task.id}
                   task={task}
+                  index={idx}
                   onToggle={onToggleTask}
                   onEdit={onEditTask}
                   onDelete={onDeleteTask}

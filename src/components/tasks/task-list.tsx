@@ -62,10 +62,11 @@ export function TaskList({
         </Card>
       ) : (
         <div className="space-y-2.5">
-          {tasks.map((task) => (
+          {tasks.map((task, idx) => (
             <TaskCard
               key={task.id}
               task={task}
+              index={idx}
               onToggle={onToggle}
               onEdit={onEdit}
               onDelete={onDelete}

@@ -14,7 +14,7 @@ export interface TaskFilterOptions {
   subjectId?: string | "ALL";
   timeframe?: "ALL" | "TODAY" | "UPCOMING" | "OVERDUE" | "COMPLETED";
   search?: string;
-  sortBy?: "dueDate" | "priority" | "title" | "createdAt";
+  sortBy?: "dueDate" | "priority" | "title" | "createdAt" | "sequence";
   sortOrder?: "asc" | "desc";
 }
 
@@ -171,7 +171,7 @@ export class TaskService {
             .from("tasks")
             .select("*")
             .eq("user_id", user.id)
-            .order("created_at", { ascending: false });
+            .order("due_date", { ascending: true, nullsFirst: false });
 
           if (error) {
             console.warn("Failed to fetch tasks from Supabase:", error);
@@ -259,17 +259,13 @@ export class TaskService {
       return true;
     });
 
-    // Sort
-    const sortBy = filters.sortBy || "createdAt";
-    const sortOrder = filters.sortOrder || "desc";
+    // Sort: Default to natural sequence (due date ascending + natural title order 1, 2, 3...)
+    const sortBy = filters.sortBy || "sequence";
+    const sortOrder = filters.sortOrder || "asc";
 
     result.sort((a, b) => {
       let cmp = 0;
-      if (sortBy === "dueDate") {
-        const timeA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
-        const timeB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
-        cmp = timeA - timeB;
-      } else if (sortBy === "priority") {
+      if (sortBy === "priority") {
         const pOrder: Record<TaskPriority, number> = {
           URGENT: 4,
           HIGH: 3,
@@ -277,11 +273,37 @@ export class TaskService {
           LOW: 1,
         };
         cmp = pOrder[b.priority] - pOrder[a.priority];
-      } else if (sortBy === "title") {
-        cmp = a.title.localeCompare(b.title);
-      } else {
-        cmp = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (cmp !== 0) return sortOrder === "asc" ? -cmp : cmp;
+        return a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" });
       }
+
+      if (sortBy === "title") {
+        cmp = a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" });
+        return sortOrder === "asc" ? cmp : -cmp;
+      }
+
+      if (sortBy === "createdAt") {
+        cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return sortOrder === "asc" ? cmp : -cmp;
+      }
+
+      // Default: "sequence" or "dueDate"
+      // Primary: Due date ascending (earliest first, nulls last)
+      if (a.dueDate && b.dueDate) {
+        cmp = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      } else if (a.dueDate && !b.dueDate) {
+        cmp = -1;
+      } else if (!a.dueDate && b.dueDate) {
+        cmp = 1;
+      } else {
+        cmp = 0;
+      }
+
+      // Secondary: Natural alphanumeric title order (Lecture 1, Lecture 2, Lecture 10...)
+      if (cmp === 0) {
+        cmp = a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" });
+      }
+
       return sortOrder === "asc" ? cmp : -cmp;
     });
 

@@ -34,7 +34,9 @@ export function TasksPageClient() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [filters, setFilters] = useState<TaskFilterOptions>({
-    timeframe: "TODAY",
+    timeframe: "ALL",
+    sortBy: "sequence",
+    sortOrder: "asc",
   });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);

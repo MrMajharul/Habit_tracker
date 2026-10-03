@@ -151,6 +151,25 @@ export function TaskFilters({
             <option value="IN_PROGRESS">In Progress</option>
             <option value="COMPLETED">Completed</option>
           </select>
+
+          {/* Sort By Filter */}
+          <select
+            value={filters.sortBy ?? "sequence"}
+            onChange={(e) =>
+              onFilterChange({
+                ...filters,
+                sortBy: e.target.value as TaskFilterOptions["sortBy"],
+              })
+            }
+            className="h-9.5 rounded-lg border border-input bg-card px-2.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            aria-label="Sort tasks by"
+          >
+            <option value="sequence">Sequence (1, 2, 3…)</option>
+            <option value="dueDate">Due Date (Earliest First)</option>
+            <option value="priority">Priority (Highest First)</option>
+            <option value="title">Title (A–Z)</option>
+            <option value="createdAt">Recently Added</option>
+          </select>
         </div>
       </div>
     </div>

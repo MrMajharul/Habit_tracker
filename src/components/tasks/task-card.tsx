@@ -21,6 +21,7 @@ import { TaskStatusBadge } from "./task-status-badge";
 
 interface TaskCardProps {
   task: Task;
+  index?: number;
   onToggle: (task: Task) => void;
   onEdit?: (task: Task) => void;
   onDelete: (id: string) => void;
@@ -29,6 +30,7 @@ interface TaskCardProps {
 
 export function TaskCard({
   task,
+  index,
   onToggle,
   onEdit,
   onDelete,
@@ -101,6 +103,11 @@ export function TaskCard({
         }}
       >
         <div className="flex flex-wrap items-center gap-2">
+          {index !== undefined && (
+            <span className="inline-flex items-center rounded-md bg-muted/80 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-muted-foreground border border-border/60">
+              #{index + 1}
+            </span>
+          )}
           {task.subject && (
             <span
               className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium"
