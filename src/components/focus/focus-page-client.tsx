@@ -14,7 +14,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -246,6 +246,44 @@ export function FocusPageClient() {
     return () => clearInterval(interval);
   }, [status, targetEndTime, handleSessionCompleted]);
 
+  // Screen WakeLock to prevent mobile screen sleep during active focus session
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function handleWakeLock() {
+      if (status === "RUNNING" && typeof navigator !== "undefined" && "wakeLock" in navigator) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request("screen");
+          wakeLockRef.current.addEventListener("release", () => {
+            if (active && status === "RUNNING") {
+              navigator.wakeLock?.request("screen").then((wl) => {
+                wakeLockRef.current = wl;
+              }).catch(() => {});
+            }
+          });
+        } catch {
+          // Wake lock may fail due to low battery mode or browser policy
+        }
+      } else if (wakeLockRef.current) {
+        active = false;
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    }
+
+    handleWakeLock();
+
+    return () => {
+      active = false;
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    };
+  }, [status]);
+
   // Start timer with prayer check
   const startTimerWithCheck = async (durationMinutes: number) => {
     // Only check prayer boundaries for focus sessions, not short breaks
@@ -263,6 +301,8 @@ export function FocusPageClient() {
   };
 
   const executeStart = (minutes: number) => {
+    // Prime mobile audio hardware on user gesture
+    alarmService.unlockMobileAudio();
     const totalSecs = minutes * 60;
     const end = Date.now() + totalSecs * 1000;
     setTargetEndTime(end);
@@ -281,6 +321,7 @@ export function FocusPageClient() {
 
   const handleResume = () => {
     if (status !== "PAUSED" || pausedRemainingMs === null) return;
+    alarmService.unlockMobileAudio();
     const end = Date.now() + pausedRemainingMs;
     setTargetEndTime(end);
     setStatus("RUNNING");

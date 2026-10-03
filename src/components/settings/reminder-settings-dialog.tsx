@@ -130,11 +130,13 @@ export function ReminderSettingsDialog({ trigger }: { trigger?: React.ReactNode 
   }, [open, loadReminders]);
 
   const handleRequestPermission = async () => {
+    alarmService.unlockMobileAudio();
     try {
       const status = await notifService.requestPermission();
       setPermission(status);
       if (status === "granted") {
-        toast.success("Notification permissions enabled");
+        alarmService.playReminderAlarm();
+        toast.success("Notification permissions & device alarms enabled");
       } else if (status === "denied") {
         toast.error("Notifications blocked by browser settings");
       }

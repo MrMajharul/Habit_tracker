@@ -108,7 +108,9 @@ self.addEventListener("push", (event) => {
       icon: payload.icon || "/icons/icon-192.png",
       badge: payload.badge || "/icons/icon.svg",
       tag: payload.tag || "istiqamaah-reminder",
-      vibrate: payload.vibrate || [100, 50, 100],
+      vibrate: payload.vibrate || [300, 100, 300, 100, 300],
+      silent: false,
+      requireInteraction: true,
       data: {
         url: payload.url || "/dashboard",
         timestamp: Date.now(),

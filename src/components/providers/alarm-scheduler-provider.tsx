@@ -12,6 +12,7 @@ import { getLocalPrayerSettings } from "@/services/prayer/prayer-settings-servic
 import { reminderService, type UserReminder } from "@/services/reminders/reminder-service";
 import { taskService } from "@/services/study/task-service";
 import type { Task } from "@/services/study/types";
+import { MobileNotificationBanner } from "@/components/notifications/mobile-notification-banner";
 
 /**
  * AlarmSchedulerProvider
@@ -27,12 +28,6 @@ export function AlarmSchedulerProvider({ children }: { children: React.ReactNode
   const isCheckingRef = useRef(false);
 
   useEffect(() => {
-    // Request notification permission if not yet decided
-    if (typeof window !== "undefined" && "Notification" in window) {
-      if (Notification.permission === "default") {
-        notificationService.requestPermission().catch(() => {});
-      }
-    }
 
     const checkSchedules = async () => {
       if (isCheckingRef.current) return;
@@ -192,8 +187,30 @@ export function AlarmSchedulerProvider({ children }: { children: React.ReactNode
     // Check periodically every 15 seconds
     const interval = setInterval(checkSchedules, 15000);
 
-    return () => clearInterval(interval);
+    // Re-check immediately whenever the mobile user unlocks their phone or focuses the browser tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkSchedules();
+      }
+    };
+    const handleFocus = () => {
+      checkSchedules();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
-  return <>{children}</>;
+  return (
+    <>
+      <MobileNotificationBanner />
+      {children}
+    </>
+  );
 }

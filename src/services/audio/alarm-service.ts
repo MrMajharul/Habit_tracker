@@ -35,7 +35,7 @@ export class AlarmService {
   /**
    * Initializes or gets the AudioContext lazily.
    */
-  private getAudioContext(): AudioContext | null {
+  public getAudioContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
 
     if (!this.audioCtx) {
@@ -56,21 +56,49 @@ export class AlarmService {
   }
 
   /**
-   * Attaches one-time interaction listeners to unlock AudioContext on mobile and desktop.
+   * Explicitly unlocks audio hardware on mobile browsers (Android Chrome, iOS Safari).
+   * Plays a silent 1-sample buffer during a user gesture to keep the audio graph awake.
+   */
+  public unlockMobileAudio(): void {
+    const ctx = this.getAudioContext();
+    if (!ctx) return;
+
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+    } catch {
+      // Ignore
+    }
+  }
+
+  /**
+   * Attaches interaction listeners to unlock AudioContext on mobile and desktop.
+   * Listens for touchstart, pointerdown, and keydown until audio is confirmed running.
    */
   private initInteractionListener() {
     if (typeof window === "undefined") return;
 
     const unlock = () => {
-      if (this.audioCtx && this.audioCtx.state === "suspended") {
-        this.audioCtx.resume().catch(() => {});
+      this.unlockMobileAudio();
+      if (this.audioCtx && this.audioCtx.state === "running") {
+        window.removeEventListener("pointerdown", unlock);
+        window.removeEventListener("touchstart", unlock);
+        window.removeEventListener("touchend", unlock);
+        window.removeEventListener("keydown", unlock);
       }
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
     };
 
-    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
-    window.addEventListener("keydown", unlock, { once: true, passive: true });
+    window.addEventListener("pointerdown", unlock, { passive: true });
+    window.addEventListener("touchstart", unlock, { passive: true });
+    window.addEventListener("touchend", unlock, { passive: true });
+    window.addEventListener("keydown", unlock, { passive: true });
   }
 
   public isSoundEnabled(): boolean {

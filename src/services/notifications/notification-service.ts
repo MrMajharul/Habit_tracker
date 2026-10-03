@@ -85,14 +85,20 @@ class BrowserNotificationProvider implements NotificationProvider {
           await reg.showNotification(title, {
             icon: "/icons/icon-192.png",
             badge: "/icons/icon.svg",
+            vibrate: [300, 100, 300, 100, 300],
+            silent: false,
+            requireInteraction: true,
+            renotify: true,
             ...options,
-          });
+          } as NotificationOptions & { vibrate?: number[]; renotify?: boolean });
           return true;
         }
       }
       new Notification(title, {
         icon: "/icons/icon-192.png",
         badge: "/icons/icon.svg",
+        silent: false,
+        requireInteraction: true,
         ...options,
       });
       return true;
@@ -101,6 +107,8 @@ class BrowserNotificationProvider implements NotificationProvider {
         new Notification(title, {
           icon: "/icons/icon-192.png",
           badge: "/icons/icon.svg",
+          silent: false,
+          requireInteraction: true,
           ...options,
         });
         return true;
