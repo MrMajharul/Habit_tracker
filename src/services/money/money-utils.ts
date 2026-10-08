@@ -186,11 +186,11 @@ export const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 export const ACCOUNT_TYPE_ICONS: Record<string, string> = {
-  cash: "💵",
-  bank: "🏦",
-  mobile_wallet: "📱",
-  savings: "🐖",
-  other: "💼",
+  cash: "banknote",
+  bank: "building-2",
+  mobile_wallet: "smartphone",
+  savings: "piggy-bank",
+  other: "credit-card",
 };
 
 export const FREQUENCY_LABELS: Record<string, string> = {

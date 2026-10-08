@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatMoney, parseAmountToMinor, isValidAmount } from "@/services/money/money-utils";
+import { CategoryIcon } from "./money-icons";
 import type { MoneyBudget, MoneyCategory } from "@/types/money";
 
 interface BudgetSectionProps {
@@ -81,7 +82,7 @@ export function BudgetSection({ budgets, compact, currency = "BDT", categories, 
                 >
                   <option value="">Select a category</option>
                   {expenseCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
@@ -137,7 +138,7 @@ function BudgetRow({ budget, currency }: { budget: MoneyBudget; currency: string
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {budget.category && (
-            <span className="text-base">{budget.category.icon}</span>
+            <CategoryIcon icon={budget.category.icon} className="size-4 text-primary" />
           )}
           <span className="text-sm font-medium">{budget.category?.name ?? "Category"}</span>
         </div>

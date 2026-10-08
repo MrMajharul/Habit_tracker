@@ -508,7 +508,7 @@ describe("Money Management System — Comprehensive Test Suite", () => {
         nextDueDate: "2026-10-12",
         frequency: "monthly",
         categoryName: "Bills",
-        categoryIcon: "📄",
+        categoryIcon: "receipt",
       },
     ];
 

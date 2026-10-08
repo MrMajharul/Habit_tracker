@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { formatMoney, parseAmountToMinor, isValidAmount, ACCOUNT_TYPE_LABELS, ACCOUNT_TYPE_ICONS } from "@/services/money/money-utils";
+import { formatMoney, parseAmountToMinor, isValidAmount, ACCOUNT_TYPE_LABELS } from "@/services/money/money-utils";
+import { AccountTypeIcon } from "./money-icons";
 import type { MoneyAccount, MoneyAccountType } from "@/types/money";
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from "@/types/money";
 
@@ -91,7 +92,7 @@ export function AccountManager({ accounts, onCreate }: AccountManagerProps) {
                           : "bg-muted/50 text-muted-foreground hover:bg-muted",
                       )}
                     >
-                      <span>{ACCOUNT_TYPE_ICONS[t]}</span>
+                      <AccountTypeIcon type={t} className="size-3.5" />
                       {ACCOUNT_TYPE_LABELS[t]}
                     </button>
                   ))}
@@ -170,8 +171,8 @@ export function AccountManager({ accounts, onCreate }: AccountManagerProps) {
             <Card key={account.id} className="group hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="rounded-lg bg-muted p-2 text-lg">
-                    {ACCOUNT_TYPE_ICONS[account.type] ?? "💼"}
+                  <div className="rounded-lg bg-muted p-2 text-foreground">
+                    <AccountTypeIcon type={account.type} className="size-5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{account.name}</p>

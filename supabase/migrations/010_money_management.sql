@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS money_categories (
   name              TEXT NOT NULL,
   type              TEXT NOT NULL DEFAULT 'expense'
                     CHECK (type IN ('income', 'expense', 'both')),
-  icon              TEXT NOT NULL DEFAULT '📦',
+  icon              TEXT NOT NULL DEFAULT 'package',
   color             TEXT NOT NULL DEFAULT '#6b7280',
   is_active         BOOLEAN NOT NULL DEFAULT true,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -71,23 +71,23 @@ CREATE POLICY "money_categories_delete_own" ON money_categories
 
 -- Seed system categories
 INSERT INTO money_categories (id, user_id, name, type, icon, color) VALUES
-  ('00000000-0000-0000-0000-000000000001', NULL, 'Food', 'expense', '🍕', '#ef4444'),
-  ('00000000-0000-0000-0000-000000000002', NULL, 'Transport', 'expense', '🚌', '#f97316'),
-  ('00000000-0000-0000-0000-000000000003', NULL, 'Education', 'expense', '📚', '#3b82f6'),
-  ('00000000-0000-0000-0000-000000000004', NULL, 'Bills', 'expense', '📄', '#8b5cf6'),
-  ('00000000-0000-0000-0000-000000000005', NULL, 'Shopping', 'expense', '🛍️', '#ec4899'),
-  ('00000000-0000-0000-0000-000000000006', NULL, 'Health', 'expense', '💊', '#14b8a6'),
-  ('00000000-0000-0000-0000-000000000007', NULL, 'Family', 'expense', '👨‍👩‍👧', '#6366f1'),
-  ('00000000-0000-0000-0000-000000000008', NULL, 'Entertainment', 'expense', '🎮', '#f59e0b'),
-  ('00000000-0000-0000-0000-000000000009', NULL, 'Charity', 'expense', '🤲', '#10b981'),
-  ('00000000-0000-0000-0000-00000000000a', NULL, 'Sadaqah', 'expense', '💝', '#059669'),
-  ('00000000-0000-0000-0000-00000000000b', NULL, 'Savings', 'expense', '🏦', '#0ea5e9'),
-  ('00000000-0000-0000-0000-00000000000c', NULL, 'Other', 'both', '📦', '#6b7280'),
-  ('00000000-0000-0000-0000-00000000000d', NULL, 'Salary', 'income', '💰', '#22c55e'),
-  ('00000000-0000-0000-0000-00000000000e', NULL, 'Freelance', 'income', '💻', '#06b6d4'),
-  ('00000000-0000-0000-0000-00000000000f', NULL, 'Gift', 'income', '🎁', '#a855f7'),
-  ('00000000-0000-0000-0000-000000000010', NULL, 'Investment', 'income', '📈', '#eab308')
-ON CONFLICT (id) DO NOTHING;
+  ('00000000-0000-0000-0000-000000000001', NULL, 'Food', 'expense', 'utensils', '#ef4444'),
+  ('00000000-0000-0000-0000-000000000002', NULL, 'Transport', 'expense', 'bus', '#f97316'),
+  ('00000000-0000-0000-0000-000000000003', NULL, 'Education', 'expense', 'book-open', '#3b82f6'),
+  ('00000000-0000-0000-0000-000000000004', NULL, 'Bills', 'expense', 'receipt', '#8b5cf6'),
+  ('00000000-0000-0000-0000-000000000005', NULL, 'Shopping', 'expense', 'shopping-bag', '#ec4899'),
+  ('00000000-0000-0000-0000-000000000006', NULL, 'Health', 'expense', 'heart-pulse', '#14b8a6'),
+  ('00000000-0000-0000-0000-000000000007', NULL, 'Family', 'expense', 'users', '#6366f1'),
+  ('00000000-0000-0000-0000-000000000008', NULL, 'Entertainment', 'expense', 'gamepad-2', '#f59e0b'),
+  ('00000000-0000-0000-0000-000000000009', NULL, 'Charity', 'expense', 'hand-heart', '#10b981'),
+  ('00000000-0000-0000-0000-00000000000a', NULL, 'Sadaqah', 'expense', 'heart', '#059669'),
+  ('00000000-0000-0000-0000-00000000000b', NULL, 'Savings', 'expense', 'piggy-bank', '#0ea5e9'),
+  ('00000000-0000-0000-0000-00000000000c', NULL, 'Other', 'both', 'package', '#6b7280'),
+  ('00000000-0000-0000-0000-00000000000d', NULL, 'Salary', 'income', 'wallet', '#22c55e'),
+  ('00000000-0000-0000-0000-00000000000e', NULL, 'Freelance', 'income', 'laptop', '#06b6d4'),
+  ('00000000-0000-0000-0000-00000000000f', NULL, 'Gift', 'income', 'gift', '#a855f7'),
+  ('00000000-0000-0000-0000-000000000010', NULL, 'Investment', 'income', 'trending-up', '#eab308')
+ON CONFLICT (id) DO UPDATE SET icon = EXCLUDED.icon;
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 3. MONEY TRANSACTIONS

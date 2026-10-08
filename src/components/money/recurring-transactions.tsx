@@ -5,6 +5,7 @@ import { Plus, Check, SkipForward, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatMoney, parseAmountToMinor, isValidAmount, getLocalToday, FREQUENCY_LABELS } from "@/services/money/money-utils";
+import { CategoryIcon } from "./money-icons";
 import type { MoneyRecurringTransaction, MoneyAccount, MoneyCategory, RecurringFrequency } from "@/types/money";
 
 interface RecurringSectionProps {
@@ -134,7 +135,7 @@ export function RecurringSection({ recurring, accounts, categories, onConfirm, o
                 <label htmlFor="rec-category" className="mb-1.5 block text-sm font-medium">Category</label>
                 <select id="rec-category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                   <option value="">None</option>
-                  {filteredCategories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                  {filteredCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
 
@@ -208,11 +209,11 @@ function RecurringRow({
 
   return (
     <div className={cn("flex items-center gap-3 rounded-xl border p-3 transition-colors", isDue ? "border-amber-500/30 bg-amber-500/5" : "hover:bg-accent/30")}>
-      <div className={cn("shrink-0 rounded-lg p-2", isIncome ? "bg-emerald-500/10" : "bg-red-500/10")}>
+      <div className={cn("shrink-0 rounded-lg p-2", isIncome ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600")}>
         {item.category?.icon ? (
-          <span className="text-base">{item.category.icon}</span>
+          <CategoryIcon icon={item.category.icon} className="size-4" />
         ) : (
-          <Calendar className={cn("size-4", isIncome ? "text-emerald-600" : "text-red-600")} />
+          <Calendar className="size-4" />
         )}
       </div>
 

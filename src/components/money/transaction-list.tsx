@@ -3,6 +3,7 @@
 import { ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/services/money/money-utils";
+import { CategoryIcon } from "./money-icons";
 import type { MoneyTransaction } from "@/types/money";
 
 interface TransactionListProps {
@@ -68,9 +69,7 @@ function TransactionRow({ txn, onDelete }: { txn: MoneyTransaction; onDelete: (i
     <div className="group flex items-center gap-3 rounded-xl p-2.5 hover:bg-accent/50 transition-colors">
       <div className={cn("shrink-0 rounded-lg p-2", bgClass)}>
         {txn.category?.icon ? (
-          <span className="text-base" role="img" aria-label={txn.category.name}>
-            {txn.category.icon}
-          </span>
+          <CategoryIcon icon={txn.category.icon} className={cn("size-4", colorClass)} />
         ) : (
           <Icon className={cn("size-4", colorClass)} />
         )}

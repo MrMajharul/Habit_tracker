@@ -68,7 +68,7 @@ export function MobileNotificationBanner() {
         toast.success("Alhamdulillah! Alarms & notifications are now enabled on this device.");
       } else if (status === "denied") {
         toast.error(
-          "Notifications blocked. In Chrome: Tap the 🔒 icon in the address bar > Permissions > Notifications > Allow.",
+          "Notifications blocked. In Chrome: Tap the lock icon in the address bar > Permissions > Notifications > Allow.",
           { duration: 8000 }
         );
       }
