@@ -2,7 +2,7 @@ import type { FocusSession, Task } from "@/services/study/types";
 import type { PrayerTime } from "@/services/prayer/types";
 import type { UserReminder } from "@/services/reminders/reminder-service";
 
-export type CalendarEventType = "TASK" | "PRAYER" | "FOCUS" | "STUDY" | "REMINDER";
+export type CalendarEventType = "TASK" | "PRAYER" | "FOCUS" | "STUDY" | "REMINDER" | "MONEY";
 
 export type CalendarViewMode = "month" | "week" | "day";
 
@@ -12,6 +12,7 @@ export interface CalendarFilters {
   focus: boolean;
   study: boolean;
   reminders: boolean;
+  money: boolean;
 }
 
 export const DEFAULT_CALENDAR_FILTERS: CalendarFilters = {
@@ -20,6 +21,7 @@ export const DEFAULT_CALENDAR_FILTERS: CalendarFilters = {
   focus: false,
   study: false,
   reminders: false,
+  money: true,
 };
 
 export const CALENDAR_FILTERS_STORAGE_KEY = "istiqamaah_calendar_filters_v1";

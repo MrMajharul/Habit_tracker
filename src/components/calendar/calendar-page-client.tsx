@@ -53,6 +53,8 @@ import { subjectService } from "@/services/study/subject-service";
 import { taskService } from "@/services/study/task-service";
 import type { FocusSession, Subject, Task, TaskStatus } from "@/services/study/types";
 import { reminderService, type UserReminder } from "@/services/reminders/reminder-service";
+import { getRecurringTransactions } from "@/services/money/money-service";
+import type { MoneyRecurringTransaction } from "@/types/money";
 
 import { CalendarDayDetails } from "./calendar-day-details";
 import { CalendarDayView } from "./calendar-day-view";
@@ -75,6 +77,7 @@ export function CalendarPageClient() {
   const [reminders, setReminders] = useState<UserReminder[]>([]);
   const [prayerSettings, setPrayerSettings] = useState<PrayerSettings>(DEFAULT_PRAYER_SETTINGS);
   const [prayersByDate, setPrayersByDate] = useState<Record<string, PrayerTime[]>>({});
+  const [moneyRecurring, setMoneyRecurring] = useState<MoneyRecurringTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Task Dialog modal state
@@ -94,12 +97,14 @@ export function CalendarPageClient() {
           loadedSessions,
           loadedReminders,
           loadedPrayerSettings,
+          loadedRecurring,
         ] = await Promise.all([
           taskService.getTasks(),
           subjectService.getSubjects(),
           focusService.getSessions(),
           reminderService.getReminders(),
           fetchUserPrayerSettings(),
+          getRecurringTransactions().catch(() => []),
         ]);
 
         if (isMounted) {
@@ -108,6 +113,7 @@ export function CalendarPageClient() {
           setSubjects(loadedSubjects);
           setFocusSessions(loadedSessions);
           setReminders(loadedReminders);
+          setMoneyRecurring(loadedRecurring);
           setPrayerSettings(loadedPrayerSettings);
           setIsLoading(false);
         }
@@ -192,9 +198,20 @@ export function CalendarPageClient() {
       prayersByDate,
       focusSessions,
       reminders,
+      moneyRecurring: moneyRecurring.map((r) => ({
+        id: r.id,
+        description: r.description,
+        amount: r.amount,
+        currency: r.currency,
+        transactionType: r.transactionType,
+        nextDueDate: r.nextDueDate,
+        frequency: r.frequency,
+        categoryName: r.category?.name,
+        categoryIcon: r.category?.icon,
+      })),
       filters,
     });
-  }, [tasks, prayersByDate, focusSessions, reminders, filters]);
+  }, [tasks, prayersByDate, focusSessions, reminders, moneyRecurring, filters]);
 
   // Date Navigation Actions
   const handlePrev = useCallback(() => {

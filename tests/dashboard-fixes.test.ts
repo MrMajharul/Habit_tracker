@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderToString } from "react-dom/server";
 
 import { HadithOfTheDay } from "@/components/dashboard/hadith-of-the-day";

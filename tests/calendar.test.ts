@@ -256,7 +256,7 @@ describe("ISTIQAMAAH — Calendar & Scheduling System Tests", () => {
     const onlyTasks = deriveAllCalendarEvents({
       tasks: [dummyTask],
       prayersByDate,
-      filters: { tasks: true, prayer: false, focus: false, study: false, reminders: false },
+      filters: { tasks: true, prayer: false, focus: false, study: false, reminders: false, money: false },
     });
     expect(onlyTasks.every((e) => e.type === "TASK")).toBe(true);
 
@@ -264,7 +264,7 @@ describe("ISTIQAMAAH — Calendar & Scheduling System Tests", () => {
     const onlyPrayer = deriveAllCalendarEvents({
       tasks: [dummyTask],
       prayersByDate,
-      filters: { tasks: false, prayer: true, focus: false, study: false, reminders: false },
+      filters: { tasks: false, prayer: true, focus: false, study: false, reminders: false, money: false },
     });
     expect(onlyPrayer.every((e) => e.type === "PRAYER")).toBe(true);
   });

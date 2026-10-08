@@ -686,6 +686,188 @@ type UserReminderInsert = {
   updated_at?: string;
 };
 
+// ─── Money: Accounts ─────────────────────────────────────────────────────────
+
+type MoneyAccountRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  type: string;
+  currency: string;
+  opening_balance: number;
+  current_balance: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type MoneyAccountInsert = {
+  id?: string;
+  user_id: string;
+  name: string;
+  type?: string;
+  currency?: string;
+  opening_balance?: number;
+  current_balance?: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Money: Categories ───────────────────────────────────────────────────────
+
+type MoneyCategoryRow = {
+  id: string;
+  user_id: string | null;
+  name: string;
+  type: string;
+  icon: string;
+  color: string;
+  is_active: boolean;
+  created_at: string;
+};
+
+type MoneyCategoryInsert = {
+  id?: string;
+  user_id?: string | null;
+  name: string;
+  type?: string;
+  icon?: string;
+  color?: string;
+  is_active?: boolean;
+  created_at?: string;
+};
+
+// ─── Money: Transactions ─────────────────────────────────────────────────────
+
+type MoneyTransactionRow = {
+  id: string;
+  user_id: string;
+  account_id: string;
+  transaction_type: string;
+  amount: number;
+  currency: string;
+  category_id: string | null;
+  date: string;
+  time: string | null;
+  description: string;
+  notes: string | null;
+  transfer_pair_id: string | null;
+  recurring_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type MoneyTransactionInsert = {
+  id?: string;
+  user_id: string;
+  account_id: string;
+  transaction_type: string;
+  amount: number;
+  currency?: string;
+  category_id?: string | null;
+  date?: string;
+  time?: string | null;
+  description?: string;
+  notes?: string | null;
+  transfer_pair_id?: string | null;
+  recurring_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Money: Budgets ──────────────────────────────────────────────────────────
+
+type MoneyBudgetRow = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  amount: number;
+  currency: string;
+  month: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type MoneyBudgetInsert = {
+  id?: string;
+  user_id: string;
+  category_id: string;
+  amount: number;
+  currency?: string;
+  month: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Money: Savings Goals ────────────────────────────────────────────────────
+
+type MoneySavingsGoalRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  currency: string;
+  target_date: string | null;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type MoneySavingsGoalInsert = {
+  id?: string;
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount?: number;
+  currency?: string;
+  target_date?: string | null;
+  is_archived?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// ─── Money: Recurring Transactions ───────────────────────────────────────────
+
+type MoneyRecurringRow = {
+  id: string;
+  user_id: string;
+  account_id: string;
+  transaction_type: string;
+  amount: number;
+  currency: string;
+  category_id: string | null;
+  description: string;
+  notes: string | null;
+  frequency: string;
+  start_date: string;
+  end_date: string | null;
+  next_due_date: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type MoneyRecurringInsert = {
+  id?: string;
+  user_id: string;
+  account_id: string;
+  transaction_type: string;
+  amount: number;
+  currency?: string;
+  category_id?: string | null;
+  description?: string;
+  notes?: string | null;
+  frequency?: string;
+  start_date?: string;
+  end_date?: string | null;
+  next_due_date: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+};
+
 // ─── Database ─────────────────────────────────────────────────────────────────
 
 export type Database = {
@@ -828,6 +1010,43 @@ export type Database = {
         Row: UserReminderRow;
         Insert: UserReminderInsert;
         Update: Partial<UserReminderInsert>;
+        Relationships: [];
+      };
+      // ─── Money Management Tables ─────────────────────────────────────
+      money_accounts: {
+        Row: MoneyAccountRow;
+        Insert: MoneyAccountInsert;
+        Update: Partial<MoneyAccountInsert>;
+        Relationships: [];
+      };
+      money_categories: {
+        Row: MoneyCategoryRow;
+        Insert: MoneyCategoryInsert;
+        Update: Partial<MoneyCategoryInsert>;
+        Relationships: [];
+      };
+      money_transactions: {
+        Row: MoneyTransactionRow;
+        Insert: MoneyTransactionInsert;
+        Update: Partial<MoneyTransactionInsert>;
+        Relationships: [];
+      };
+      money_budgets: {
+        Row: MoneyBudgetRow;
+        Insert: MoneyBudgetInsert;
+        Update: Partial<MoneyBudgetInsert>;
+        Relationships: [];
+      };
+      money_savings_goals: {
+        Row: MoneySavingsGoalRow;
+        Insert: MoneySavingsGoalInsert;
+        Update: Partial<MoneySavingsGoalInsert>;
+        Relationships: [];
+      };
+      money_recurring_transactions: {
+        Row: MoneyRecurringRow;
+        Insert: MoneyRecurringInsert;
+        Update: Partial<MoneyRecurringInsert>;
         Relationships: [];
       };
     };

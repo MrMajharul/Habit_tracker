@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import { Bell, Volume2, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,15 +9,16 @@ import { alarmService } from "@/services/audio/alarm-service";
 import { notificationService } from "@/services/notifications/notification-service";
 
 const DISMISS_KEY = "istiqamaah_notif_banner_dismissed_v1";
+const emptySubscribe = () => () => {};
 
-function getInitialPermission(): NotificationPermission | "unsupported" {
+function getClientPermissionSnapshot(): NotificationPermission | "unsupported" {
   if (typeof window === "undefined" || !("Notification" in window)) {
     return "unsupported";
   }
   return Notification.permission;
 }
 
-function getInitialDismissed(): boolean {
+function getClientDismissedSnapshot(): boolean {
   if (typeof window === "undefined") return true;
   try {
     return sessionStorage.getItem(DISMISS_KEY) === "true";
@@ -26,9 +27,28 @@ function getInitialDismissed(): boolean {
   }
 }
 
+const getServerPermissionSnapshot = () => "unsupported" as const;
+const getServerDismissedSnapshot = () => true;
+
 export function MobileNotificationBanner() {
-  const [permission, setPermission] = useState<NotificationPermission | "unsupported">(getInitialPermission);
-  const [dismissed, setDismissed] = useState<boolean>(getInitialDismissed);
+  const permissionSnapshot = useSyncExternalStore(
+    emptySubscribe,
+    getClientPermissionSnapshot,
+    getServerPermissionSnapshot
+  );
+  const dismissedSnapshot = useSyncExternalStore(
+    emptySubscribe,
+    getClientDismissedSnapshot,
+    getServerDismissedSnapshot
+  );
+
+  const [permissionOverride, setPermissionOverride] = useState<
+    NotificationPermission | null
+  >(null);
+  const [userDismissed, setUserDismissed] = useState(false);
+
+  const permission = permissionOverride ?? permissionSnapshot;
+  const dismissed = userDismissed || dismissedSnapshot;
 
   if (permission === "granted" || permission === "unsupported" || dismissed) {
     return null;
@@ -40,7 +60,7 @@ export function MobileNotificationBanner() {
 
     try {
       const status = await notificationService.requestPermission();
-      setPermission(status as NotificationPermission);
+      setPermissionOverride(status as NotificationPermission);
 
       if (status === "granted") {
         // Play gentle chime to confirm audio channel is active
@@ -58,7 +78,7 @@ export function MobileNotificationBanner() {
   };
 
   const handleDismiss = () => {
-    setDismissed(true);
+    setUserDismissed(true);
     try {
       sessionStorage.setItem(DISMISS_KEY, "true");
     } catch {

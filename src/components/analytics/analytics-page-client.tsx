@@ -20,6 +20,7 @@ import {
   Shield,
   Sparkles,
   Target,
+  Wallet,
   WifiOff,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ import { Progress } from "@/components/ui/progress";
 import dynamic from "next/dynamic";
 import { PeriodSelector } from "./period-selector";
 import { ActivityHeatmap } from "./activity-heatmap";
+import { MoneyAnalyticsSection } from "@/components/money/money-analytics-section";
 
 const TrendChart = dynamic(
   () => import("./charts/trend-chart").then((m) => m.TrendChart),
@@ -76,7 +78,8 @@ type ActiveTab =
   | "reflections"
   | "insights"
   | "heatmap"
-  | "reviews";
+  | "reviews"
+  | "money";
 
 const TABS: Array<{ id: ActiveTab; label: string; icon: typeof BarChart3 }> = [
   { id: "overview", label: "Overview", icon: Sparkles },
@@ -91,6 +94,7 @@ const TABS: Array<{ id: ActiveTab; label: string; icon: typeof BarChart3 }> = [
   { id: "insights", label: "Insights", icon: Lightbulb },
   { id: "heatmap", label: "Heatmap", icon: Calendar },
   { id: "reviews", label: "Reviews", icon: BarChart3 },
+  { id: "money", label: "Money", icon: Wallet },
 ];
 
 export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezone?: string }) {
@@ -1082,6 +1086,13 @@ export function AnalyticsPageClient({ initialTimezone = "UTC" }: { initialTimezo
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* TAB: MONEY */}
+          {activeTab === "money" && (
+            <div className="space-y-6">
+              <MoneyAnalyticsSection month={summary.range.startDate.slice(0, 7)} />
             </div>
           )}
         </div>

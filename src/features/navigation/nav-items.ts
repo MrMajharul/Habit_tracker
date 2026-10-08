@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Target,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -37,6 +38,7 @@ export const mainNavItems: NavItem[] = [
   { title: "Focus", href: "/focus", icon: Clock, showInMore: true },
   { title: "Hadith", href: "/hadith", icon: ScrollText, showInMore: true },
   { title: "Dhikr", href: "/dhikr", icon: Moon, showInMore: true },
+  { title: "Money", href: "/money", icon: Wallet, showInMore: true },
   { title: "Duas", href: "/duas", icon: HandHeart, showInMore: true },
   { title: "Goals", href: "/goals", icon: Target, showInMore: true },
   { title: "Analytics", href: "/analytics", icon: BarChart3, showInMore: true },

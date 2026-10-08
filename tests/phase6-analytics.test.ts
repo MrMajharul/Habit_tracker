@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  addCalendarDays,
   clampRangeToToday,
   enumerateDates,
   formatInstantInTimeZone,
   formatMinutes,
-  formatRangeLabel,
-  isDateInRange,
   resolveAnalyticsPeriod,
-  startOfIsoWeek,
-  startOfMonth,
 } from "@/services/analytics/analytics-period";
 import {
   aggregateAnalytics,

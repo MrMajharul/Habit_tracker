@@ -29,7 +29,17 @@ export type OfflineActionType =
   // Post-Beta: Reminders
   | "create_reminder"
   | "update_reminder"
-  | "delete_reminder";
+  | "delete_reminder"
+  // Money Management
+  | "money_create_account"
+  | "money_create_transaction"
+  | "money_create_transfer"
+  | "money_update_transaction"
+  | "money_delete_transaction"
+  | "money_upsert_budget"
+  | "money_create_savings_goal"
+  | "money_update_savings_goal"
+  | "money_create_recurring";
 
 export interface OfflineAction {
   id: string;
@@ -440,6 +450,69 @@ export async function flushOfflineQueue(): Promise<{
           .delete()
           .eq("id", item.payload.id)
           .eq("user_id", user.id);
+        successCount++;
+      }
+      // ─── Money Management ──────────────────────────────────────────
+      else if (item.type === "money_create_account") {
+        await supabase.from("money_accounts").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "money_create_transaction") {
+        await supabase.from("money_transactions").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "money_create_transfer") {
+        const { outTxn, inTxn } = item.payload;
+        await supabase.from("money_transactions").upsert([
+          { ...outTxn, user_id: user.id },
+          { ...inTxn, user_id: user.id },
+        ]);
+        successCount++;
+      } else if (item.type === "money_update_transaction") {
+        const { id, updates } = item.payload;
+        await supabase
+          .from("money_transactions")
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "money_delete_transaction") {
+        await supabase
+          .from("money_transactions")
+          .delete()
+          .eq("id", item.payload.id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "money_upsert_budget") {
+        await supabase.from("money_budgets").upsert({
+          ...item.payload,
+          user_id: user.id,
+          updated_at: new Date().toISOString(),
+        });
+        successCount++;
+      } else if (item.type === "money_create_savings_goal") {
+        await supabase.from("money_savings_goals").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
+        successCount++;
+      } else if (item.type === "money_update_savings_goal") {
+        const { id, updates } = item.payload;
+        await supabase
+          .from("money_savings_goals")
+          .update({ ...updates, updated_at: new Date().toISOString() })
+          .eq("id", id)
+          .eq("user_id", user.id);
+        successCount++;
+      } else if (item.type === "money_create_recurring") {
+        await supabase.from("money_recurring_transactions").upsert({
+          ...item.payload,
+          user_id: user.id,
+        });
         successCount++;
       }
     } catch (err) {

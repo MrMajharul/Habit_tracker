@@ -32,6 +32,13 @@ export function clearUserLocalData(): void {
       "istiqamaah_daily_reflection",
       "noorpath_daily_reflection",
       "istiqamaah_analytics_snapshot_cache",
+      // Money Management
+      "istiqamaah_money_accounts",
+      "istiqamaah_money_categories",
+      "istiqamaah_money_transactions",
+      "istiqamaah_money_budgets",
+      "istiqamaah_money_savings_goals",
+      "istiqamaah_money_recurring",
     ];
 
     for (const key of knownKeys) {

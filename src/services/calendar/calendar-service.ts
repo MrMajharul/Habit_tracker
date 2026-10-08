@@ -303,6 +303,45 @@ export function deriveReminderEvents(
 }
 
 /**
+ * Derives CalendarEvents from recurring money transactions for a date range.
+ */
+export function deriveMoneyEvents(
+  recurringItems: Array<{
+    id: string;
+    description: string;
+    amount: number;
+    currency: string;
+    transactionType: string;
+    nextDueDate: string;
+    frequency: string;
+    categoryName?: string;
+    categoryIcon?: string;
+  }>,
+  startDateKey: string,
+  endDateKey: string,
+): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+
+  for (const item of recurringItems) {
+    // Only show if nextDueDate falls within the date range
+    if (item.nextDueDate >= startDateKey && item.nextDueDate <= endDateKey) {
+      events.push({
+        id: `money-${item.id}-${item.nextDueDate}`,
+        type: "MONEY",
+        title: item.description || item.categoryName || "Transaction",
+        description: `${item.transactionType === "income" ? "Income" : "Expense"} · ${item.frequency}`,
+        dateKey: item.nextDueDate,
+        isAllDay: true,
+        color: item.transactionType === "income" ? "#10b981" : "#ef4444",
+        rawEntity: item as unknown as Record<string, unknown>,
+      });
+    }
+  }
+
+  return events;
+}
+
+/**
  * Unified derivation function that aggregates all sources into filtered, chronologically sorted events.
  */
 export function deriveAllCalendarEvents(params: {
@@ -310,9 +349,21 @@ export function deriveAllCalendarEvents(params: {
   prayersByDate?: Record<string, PrayerTime[]>;
   focusSessions?: FocusSession[];
   reminders?: UserReminder[];
+  moneyRecurring?: Array<{
+    id: string;
+    description: string;
+    amount: number;
+    currency: string;
+    transactionType: string;
+    nextDueDate: string;
+    frequency: string;
+    categoryName?: string;
+    categoryIcon?: string;
+  }>;
   filters: CalendarFilters;
+  dateRange?: { start: string; end: string };
 }): CalendarEvent[] {
-  const { tasks, prayersByDate = {}, focusSessions = [], reminders = [], filters } = params;
+  const { tasks, prayersByDate = {}, focusSessions = [], reminders = [], moneyRecurring = [], filters } = params;
   const events: CalendarEvent[] = [];
 
   // 1. Tasks
@@ -345,6 +396,14 @@ export function deriveAllCalendarEvents(params: {
       const d = parseLocalDateKey(dateKey);
       events.push(...deriveReminderEvents(reminders, d, dateKey));
     }
+  }
+
+  // 5. Money recurring transactions
+  if (filters.money && moneyRecurring.length > 0) {
+    const dateKeys = Object.keys(prayersByDate);
+    const startKey = params.dateRange?.start ?? dateKeys[0] ?? formatLocalDateKey(new Date());
+    const endKey = params.dateRange?.end ?? dateKeys[dateKeys.length - 1] ?? formatLocalDateKey(new Date());
+    events.push(...deriveMoneyEvents(moneyRecurring, startKey, endKey));
   }
 
   // Sort events chronologically: All-day events first, then by startDate

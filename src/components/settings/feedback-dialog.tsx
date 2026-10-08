@@ -6,7 +6,6 @@ import {
   Check,
   ChevronDown,
   Copy,
-  ExternalLink,
   History,
   Info,
   Lightbulb,
@@ -21,7 +20,6 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,7 +50,7 @@ interface FeedbackDialogProps {
   userName?: string;
 }
 
-export function FeedbackDialog({ userEmail = "", userName = "" }: FeedbackDialogProps) {
+export function FeedbackDialog({ userEmail = "" }: FeedbackDialogProps) {
   const [open, setOpen] = React.useState(false);
   const [category, setCategory] = React.useState<FeedbackCategory>("general");
   const [rating, setRating] = React.useState<number>(5);

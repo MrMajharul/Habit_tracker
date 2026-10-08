@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Bell, BookOpen, CheckSquare, Flame, Sparkles } from "lucide-react";
+import { Bell, BookOpen, CheckSquare, Flame, Sparkles, Wallet } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { CalendarFilters } from "@/services/calendar/calendar-types";
@@ -64,6 +64,13 @@ export function CalendarFiltersBar({
       icon: Bell,
       activeClasses:
         "bg-purple-600 text-white border-purple-600 shadow-sm hover:bg-purple-700",
+    },
+    {
+      key: "money",
+      label: "Money",
+      icon: Wallet,
+      activeClasses:
+        "bg-teal-600 text-white border-teal-600 shadow-sm hover:bg-teal-700 dark:bg-teal-500",
     },
   ];
 

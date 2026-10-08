@@ -10,6 +10,7 @@ import {
   Clock,
   Flame,
   Sparkles,
+  Wallet,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export function CalendarEventCard({
   const isFocus = event.type === "FOCUS";
   const isStudy = event.type === "STUDY";
   const isReminder = event.type === "REMINDER";
+  const isMoney = event.type === "MONEY";
   const isCompleted = event.status === "COMPLETED";
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -70,6 +72,9 @@ export function CalendarEventCard({
     } else if (isReminder) {
       bgStyle = "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20";
       dotColor = "bg-purple-500";
+    } else if (isMoney) {
+      bgStyle = "bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20";
+      dotColor = "bg-teal-500";
     } else if (isTask) {
       if (event.priority === "URGENT") {
         bgStyle = "bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20";
@@ -123,6 +128,7 @@ export function CalendarEventCard({
         isPrayer && "border-emerald-500/30 bg-emerald-500/5",
         isFocus && "border-amber-500/30 bg-amber-500/5",
         isReminder && "border-purple-500/30 bg-purple-500/5",
+        isMoney && "border-teal-500/30 bg-teal-500/5",
         isCompleted && "opacity-65 bg-muted/20 border-border/40",
         className,
       )}
@@ -158,6 +164,10 @@ export function CalendarEventCard({
             <div className="mt-0.5 size-4 rounded-full bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
               <BookOpen className="size-2.5" />
             </div>
+          ) : isMoney ? (
+            <div className="mt-0.5 size-4 rounded-full bg-teal-500/20 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0">
+              <Wallet className="size-2.5" />
+            </div>
           ) : (
             <div className="mt-0.5 size-4 rounded-full bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
               <Bell className="size-2.5" />
@@ -184,6 +194,7 @@ export function CalendarEventCard({
                     isFocus && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
                     isReminder && "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
                     isStudy && "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+                    isMoney && "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20",
                   )}
                 >
                   {event.type}

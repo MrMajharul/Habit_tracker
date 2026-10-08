@@ -16,6 +16,7 @@ import { getPrayerDaySummary } from "@/services/prayer";
 import { suggestionEngine } from "@/services/suggestions/suggestion-engine";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MoneyDashboardCard } from "@/components/dashboard/money-card";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,9 @@ async function CriticalContent() {
           completedSessionsToday={Math.floor(dashboard.progress.focusMinutesToday / 25)}
         />
       </div>
+
+      {/* Money card loads independently — never blocks dashboard */}
+      <MoneyDashboardCard />
     </>
   );
 }
