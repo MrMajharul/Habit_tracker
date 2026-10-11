@@ -87,7 +87,7 @@ export function MoneyDashboard() {
 
     async function fetchData() {
       try {
-        const [accs, cats, txns, sum, budgetData, goals, rec] = await Promise.all([
+        const [initialAccs, cats, txns, sum, budgetData, goals, rec] = await Promise.all([
           getAccounts(),
           getCategories(),
           getTransactions({ month: selectedMonth }),
@@ -96,6 +96,25 @@ export function MoneyDashboard() {
           getSavingsGoals(),
           getRecurringTransactions(),
         ]);
+
+        let accs = initialAccs;
+        // Auto-seed default primary account if none exists
+        if (accs.length === 0) {
+          try {
+            const defaultAcc = await createAccount({
+              name: "Cash Wallet",
+              type: "cash",
+              currency: DEFAULT_CURRENCY,
+              openingBalance: 0,
+            });
+            if (defaultAcc) {
+              accs = [defaultAcc];
+            }
+          } catch (e) {
+            console.warn("Failed to auto-create default account:", e);
+          }
+        }
+
         if (!ignore) {
           setAccounts(accs);
           setCategories(cats);
@@ -488,6 +507,13 @@ export function MoneyDashboard() {
         onTypeChange={setTxnDialogType}
         accounts={accounts}
         categories={categories}
+        onCreateAccount={async (data) => {
+          const acc = await createAccount(data);
+          if (acc) {
+            setAccounts((prev) => [...prev, acc]);
+          }
+          return acc;
+        }}
         onSave={async (data) => {
           await createTransaction(data);
           loadData();

@@ -14,6 +14,12 @@ interface TransactionDialogProps {
   onTypeChange: (type: "income" | "expense" | "transfer") => void;
   accounts: MoneyAccount[];
   categories: MoneyCategory[];
+  onCreateAccount?: (data: {
+    name: string;
+    type: string;
+    currency: string;
+    openingBalance: number;
+  }) => Promise<MoneyAccount | null>;
   onSave: (data: {
     accountId: string;
     transactionType: "income" | "expense";
@@ -43,6 +49,7 @@ export function TransactionDialog({
   onTypeChange,
   accounts,
   categories,
+  onCreateAccount,
   onSave,
   onTransfer,
 }: TransactionDialogProps) {
@@ -56,6 +63,9 @@ export function TransactionDialog({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [quickAccountName, setQuickAccountName] = useState("Cash Wallet");
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
 
   const filteredCategories = categories.filter((c) => {
     if (type === "income") return c.type === "income" || c.type === "both";
@@ -100,8 +110,58 @@ export function TransactionDialog({
       return;
     }
 
-    if (!effectiveAccountId && type !== "transfer") {
-      setError("Please select an account");
+    let targetAccountId = effectiveAccountId;
+
+    if (type !== "transfer") {
+      if (!targetAccountId) {
+        if (onCreateAccount) {
+          setSaving(true);
+          try {
+            const accName = quickAccountName.trim() || "Cash Wallet";
+            const newAcc = await onCreateAccount({
+              name: accName,
+              type: "cash",
+              currency: "BDT",
+              openingBalance: 0,
+            });
+            if (newAcc) {
+              targetAccountId = newAcc.id;
+              setAccountId(newAcc.id);
+            } else {
+              setError("Please create an account to record this transaction");
+              setSaving(false);
+              return;
+            }
+          } catch {
+            setError("Failed to create account");
+            setSaving(false);
+            return;
+          }
+        } else {
+          setError("Please select an account");
+          return;
+        }
+      }
+
+      setSaving(true);
+      try {
+        await onSave({
+          accountId: targetAccountId,
+          transactionType: type,
+          amount: minorAmount,
+          currency,
+          categoryId: categoryId || null,
+          date,
+          time: time || undefined,
+          description: description || filteredCategories.find((c) => c.id === categoryId)?.name || "",
+          notes: notes || undefined,
+        });
+        handleClose();
+      } catch {
+        setError("Failed to save transaction");
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -134,26 +194,6 @@ export function TransactionDialog({
         setSaving(false);
       }
       return;
-    }
-
-    setSaving(true);
-    try {
-      await onSave({
-        accountId: effectiveAccountId,
-        transactionType: type,
-        amount: minorAmount,
-        currency,
-        categoryId: categoryId || null,
-        date,
-        time: time || undefined,
-        description: description || filteredCategories.find((c) => c.id === categoryId)?.name || "",
-        notes: notes || undefined,
-      });
-      handleClose();
-    } catch {
-      setError("Failed to save transaction");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -238,50 +278,197 @@ export function TransactionDialog({
           {/* Account */}
           {type !== "transfer" ? (
             <div>
-              <label htmlFor="txn-account" className="mb-1.5 block text-sm font-medium">Account</label>
-              <select
-                id="txn-account"
-                value={effectiveAccountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                required
-              >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.currency})
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="txn-from-account" className="mb-1.5 block text-sm font-medium">From</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="txn-account" className="block text-sm font-medium">Account</label>
+                {onCreateAccount && accounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAddAccount(!showAddAccount)}
+                    className="text-xs text-primary hover:underline font-medium"
+                  >
+                    {showAddAccount ? "Cancel" : "+ New Account"}
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Add Inline Form if user expands it */}
+              {showAddAccount && onCreateAccount && (
+                <div className="mb-2.5 rounded-xl border border-primary/20 bg-muted/40 p-2.5 space-y-2 animate-in fade-in-50">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={quickAccountName}
+                      onChange={(e) => setQuickAccountName(e.target.value)}
+                      placeholder="Account name (e.g. bKash, Bank)"
+                      className="flex-1 rounded-lg border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      disabled={creatingAccount || !quickAccountName.trim()}
+                      onClick={async () => {
+                        if (!quickAccountName.trim() || !onCreateAccount) return;
+                        setCreatingAccount(true);
+                        try {
+                          const newAcc = await onCreateAccount({
+                            name: quickAccountName.trim(),
+                            type: "cash",
+                            currency: "BDT",
+                            openingBalance: 0,
+                          });
+                          if (newAcc) {
+                            setAccountId(newAcc.id);
+                            setShowAddAccount(false);
+                            setQuickAccountName("Cash Wallet");
+                          }
+                        } finally {
+                          setCreatingAccount(false);
+                        }
+                      }}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {creatingAccount ? "Adding..." : "Add"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {accounts.length === 0 ? (
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      Primary Account
+                    </p>
+                    <span className="text-[11px] text-muted-foreground">Will be created automatically</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      id="txn-account"
+                      type="text"
+                      value={quickAccountName}
+                      onChange={(e) => setQuickAccountName(e.target.value)}
+                      placeholder="Account name (e.g. Cash Wallet)"
+                      className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    {onCreateAccount && (
+                      <button
+                        type="button"
+                        disabled={creatingAccount || !quickAccountName.trim()}
+                        onClick={async () => {
+                          if (!quickAccountName.trim() || !onCreateAccount) return;
+                          setCreatingAccount(true);
+                          try {
+                            const newAcc = await onCreateAccount({
+                              name: quickAccountName.trim(),
+                              type: "cash",
+                              currency: "BDT",
+                              openingBalance: 0,
+                            });
+                            if (newAcc) {
+                              setAccountId(newAcc.id);
+                            }
+                          } finally {
+                            setCreatingAccount(false);
+                          }
+                        }}
+                        className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        {creatingAccount ? "Adding..." : "+ Create"}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Your transaction will be safely recorded under this account.
+                  </p>
+                </div>
+              ) : (
                 <select
-                  id="txn-from-account"
+                  id="txn-account"
                   value={effectiveAccountId}
                   onChange={(e) => setAccountId(e.target.value)}
                   className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 >
                   {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} ({acc.currency})
+                    </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label htmlFor="txn-to-account" className="mb-1.5 block text-sm font-medium">To</label>
-                <select
-                  id="txn-to-account"
-                  value={toAccountId || accounts.find((a) => a.id !== effectiveAccountId)?.id || ""}
-                  onChange={(e) => setToAccountId(e.target.value)}
-                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  required
-                >
-                  {accounts.filter((a) => a.id !== effectiveAccountId).map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.name}</option>
-                  ))}
-                </select>
+              )}
+            </div>
+          ) : (
+            <div>
+              {accounts.length < 2 && onCreateAccount && (
+                <div className="mb-3 rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 space-y-2">
+                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                    Transfers require at least 2 accounts. Add a second account:
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={quickAccountName}
+                      onChange={(e) => setQuickAccountName(e.target.value)}
+                      placeholder="e.g. Bank, bKash"
+                      className="flex-1 rounded-lg border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      type="button"
+                      disabled={creatingAccount || !quickAccountName.trim()}
+                      onClick={async () => {
+                        if (!quickAccountName.trim() || !onCreateAccount) return;
+                        setCreatingAccount(true);
+                        try {
+                          const newAcc = await onCreateAccount({
+                            name: quickAccountName.trim(),
+                            type: "bank",
+                            currency: "BDT",
+                            openingBalance: 0,
+                          });
+                          if (newAcc) {
+                            setToAccountId(newAcc.id);
+                          }
+                        } finally {
+                          setCreatingAccount(false);
+                        }
+                      }}
+                      className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {creatingAccount ? "Adding..." : "+ Add"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="txn-from-account" className="mb-1.5 block text-sm font-medium">From</label>
+                  <select
+                    id="txn-from-account"
+                    value={effectiveAccountId}
+                    onChange={(e) => setAccountId(e.target.value)}
+                    className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    required
+                  >
+                    {accounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="txn-to-account" className="mb-1.5 block text-sm font-medium">To</label>
+                  <select
+                    id="txn-to-account"
+                    value={toAccountId || accounts.find((a) => a.id !== effectiveAccountId)?.id || ""}
+                    onChange={(e) => setToAccountId(e.target.value)}
+                    className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    required
+                  >
+                    {accounts.filter((a) => a.id !== effectiveAccountId).map((acc) => (
+                      <option key={acc.id} value={acc.id}>{acc.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           )}
