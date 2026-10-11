@@ -161,36 +161,36 @@ export function MoneyDashboard() {
           <h1 className="text-2xl font-bold tracking-tight">Money</h1>
           <p className="text-sm text-muted-foreground">Track income, expenses, and savings</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
           <button
             type="button"
             onClick={() => handleOpenTxnDialog("income")}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-500/20 transition-colors dark:text-emerald-400"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs sm:text-sm font-medium text-emerald-600 hover:bg-emerald-500/20 transition-colors dark:text-emerald-400"
             aria-label="Add income"
             id="money-add-income"
           >
             <ArrowDownLeft className="size-4" />
-            <span className="hidden sm:inline">Income</span>
+            <span>Income</span>
           </button>
           <button
             type="button"
             onClick={() => handleOpenTxnDialog("expense")}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-red-500/10 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-500/20 transition-colors dark:text-red-400"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-red-500/10 px-3 py-2 text-xs sm:text-sm font-medium text-red-600 hover:bg-red-500/20 transition-colors dark:text-red-400"
             aria-label="Add expense"
             id="money-add-expense"
           >
             <ArrowUpRight className="size-4" />
-            <span className="hidden sm:inline">Expense</span>
+            <span>Expense</span>
           </button>
           <button
             type="button"
             onClick={() => handleOpenTxnDialog("transfer")}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500/10 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-500/20 transition-colors dark:text-blue-400"
+            className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-500/10 px-3 py-2 text-xs sm:text-sm font-medium text-blue-600 hover:bg-blue-500/20 transition-colors dark:text-blue-400"
             aria-label="Transfer between accounts"
             id="money-add-transfer"
           >
             <ArrowLeftRight className="size-4" />
-            <span className="hidden sm:inline">Transfer</span>
+            <span>Transfer</span>
           </button>
         </div>
       </div>
@@ -319,7 +319,7 @@ export function MoneyDashboard() {
               )}
             >
               <Icon className="size-3.5" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="text-xs sm:text-sm">{tab.label}</span>
             </button>
           );
         })}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ArrowDownLeft, ArrowUpRight, ArrowLeftRight } from "lucide-react";
+import { X, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { parseAmountToMinor, isValidAmount, getLocalToday } from "@/services/money/money-utils";
 import { CategoryIcon } from "./money-icons";
@@ -166,15 +166,17 @@ export function TransactionDialog({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-label="Add transaction">
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-label="Add transaction">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Dialog */}
-      <div className="relative w-full max-w-lg bg-background rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
+      <div className="relative w-full max-w-lg bg-background rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background/95 backdrop-blur px-5 py-4">
-          <h2 className="text-lg font-semibold">Add Transaction</h2>
+        <div className="flex items-center justify-between border-b bg-background/95 px-5 py-4 shrink-0">
+          <h2 className="text-lg font-semibold">
+            {type === "transfer" ? "New Transfer" : `Add ${type === "income" ? "Income" : "Expense"}`}
+          </h2>
           <button
             type="button"
             onClick={handleClose}
@@ -185,8 +187,10 @@ export function TransactionDialog({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
-          {/* Type Selector */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          {/* Scrollable Form Body */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            {/* Type Selector */}
           <div className="flex gap-2" role="radiogroup" aria-label="Transaction type">
             {typeButtons.map((btn) => {
               const Icon = btn.icon;
@@ -373,22 +377,39 @@ export function TransactionDialog({
             <p className="text-sm text-destructive" role="alert">{error}</p>
           )}
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={saving}
-            className={cn(
-              "w-full rounded-xl py-3 text-sm font-semibold transition-all",
-              type === "income"
-                ? "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-                : type === "expense"
-                ? "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-                : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-              saving && "opacity-50 cursor-not-allowed",
-            )}
-          >
-            {saving ? "Saving..." : type === "transfer" ? "Transfer" : `Add ${type === "income" ? "Income" : "Expense"}`}
-          </button>
+          </div>
+
+          {/* Sticky Footer with Save Button */}
+          <div className="border-t bg-background/95 backdrop-blur px-5 py-3.5 pb-6 sm:pb-3.5 shrink-0">
+            <button
+              type="submit"
+              id="txn-save-button"
+              disabled={saving}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all shadow-sm",
+                type === "income"
+                  ? "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+                  : type === "expense"
+                  ? "bg-red-600 text-white hover:bg-red-700 active:bg-red-800 dark:bg-red-500 dark:hover:bg-red-600"
+                  : "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-500 dark:hover:bg-blue-600",
+                saving && "opacity-50 cursor-not-allowed",
+              )}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="size-4" />
+                  <span>
+                    Save {type === "transfer" ? "Transfer" : type === "income" ? "Income" : "Expense"}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
