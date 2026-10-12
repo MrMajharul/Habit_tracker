@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/providers/theme-provider";
 import * as React from "react";
 import { toast } from "sonner";
 import { clearOfflineQueue } from "@/lib/offline/offline-sync-queue";
