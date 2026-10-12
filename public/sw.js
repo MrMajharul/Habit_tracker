@@ -1,5 +1,5 @@
-// Istiqamaah Service Worker v4
-const CACHE_NAME = "istiqamaah-v4";
+// Istiqamaah Service Worker v5
+const CACHE_NAME = "istiqamaah-v5";
 const OFFLINE_URL = "/dashboard";
 
 const STATIC_ASSETS = [
@@ -38,6 +38,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  // Never intercept or cache requests when running on localhost / development
+  if (self.location.hostname === "localhost" || self.location.hostname === "127.0.0.1") {
+    return;
+  }
 
   const url = new URL(event.request.url);
 
