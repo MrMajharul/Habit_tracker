@@ -42,6 +42,16 @@ import { PrayerAwarePrompt } from "./prayer-aware-prompt";
 type TimerMode = "FOCUS" | "SHORT_BREAK" | "LONG_BREAK" | "CUSTOM";
 type TimerStatus = "IDLE" | "RUNNING" | "PAUSED";
 
+// Helper to format elapsed time as "Xh Ym" or "Ym Zs"
+function formatElapsed(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 interface ModePreset {
   id: TimerMode;
   label: string;
@@ -67,6 +77,7 @@ export function FocusPageClient() {
 
   // Mode and durations
   const [mode, setMode] = useState<TimerMode>("FOCUS");
+  const [focusMinutes, setFocusMinutes] = useState(25);
   const [customMinutes, setCustomMinutes] = useState(30);
 
   // Subjects & Tasks
@@ -109,7 +120,7 @@ export function FocusPageClient() {
   // Calculate current planned minutes
   const currentPlannedMinutes =
     mode === "FOCUS"
-      ? 25
+      ? focusMinutes
       : mode === "SHORT_BREAK"
         ? 5
         : mode === "LONG_BREAK"
@@ -173,11 +184,17 @@ export function FocusPageClient() {
 
     if (isWorkSession) {
       const actualMinutes = currentPlannedMinutes;
+      const startTime = sessionStartTime || new Date(Date.now() - actualMinutes * 60000).toISOString();
+      const endTime = new Date().toISOString();
+      const elapsedTotalSeconds = Math.round(
+        (new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000
+      );
+
       const newSession = await focusService.recordSession({
         taskId: selectedTaskId || null,
         subjectId: selectedSubjectId || null,
-        startedAt: sessionStartTime || new Date(Date.now() - actualMinutes * 60000).toISOString(),
-        endedAt: new Date().toISOString(),
+        startedAt: startTime,
+        endedAt: endTime,
         plannedMinutes: actualMinutes,
         actualMinutes,
         status: "COMPLETED",
@@ -187,14 +204,34 @@ export function FocusPageClient() {
 
       setSessions((prev) => [newSession, ...prev]);
 
+      // Auto-complete the associated task when timer finishes
+      if (selectedTaskId && selectedTask && selectedTask.status !== "COMPLETED") {
+        try {
+          await taskService.toggleTask(selectedTaskId, "COMPLETED");
+          // Update local tasks list
+          setTasks((prev) =>
+            prev.map((t) =>
+              t.id === selectedTaskId
+                ? { ...t, status: "COMPLETED" as const, completedAt: new Date().toISOString() }
+                : t
+            )
+          );
+        } catch (err) {
+          console.warn("Failed to auto-complete task:", err);
+        }
+      }
+
       // Complete notification
       notificationService.sendFocusCompleteNotification(
         selectedTask?.title || selectedSubject?.name || "Focus Session",
         actualMinutes,
       );
 
+      // Play alarm
+      alarmService.playFocusCompleteAlarm();
+
       toast.success("Alhamdulillah! Focus session completed", {
-        description: `Logged ${actualMinutes} minutes on ${selectedTask?.title || selectedSubject?.name || "Deep Work"}.`,
+        description: `${selectedTask?.title || selectedSubject?.name || "Deep Work"} — ${formatElapsed(elapsedTotalSeconds)} focused${selectedTaskId && selectedTask ? " ✅ Task auto-completed!" : ""}`,
         duration: 10000,
         action: {
           label: "Stop Alarm",
@@ -215,7 +252,7 @@ export function FocusPageClient() {
         },
       });
       setMode("FOCUS");
-      setRemainingSeconds(25 * 60);
+      setRemainingSeconds(focusMinutes * 60);
     }
   }, [
     mode,
@@ -225,6 +262,7 @@ export function FocusPageClient() {
     selectedSubjectId,
     currentPlannedMinutes,
     sessionStartTime,
+    focusMinutes,
   ]);
 
   // Drift-proof timer update loop
@@ -362,7 +400,7 @@ export function FocusPageClient() {
       });
 
       setSessions((prev) => [saved, ...prev]);
-      toast.info(`Session ended early. Logged ${elapsedMinutes} minutes.`);
+      toast.info(`Session ended early. ${formatElapsed(elapsedSeconds)} focused.`);
     }
   };
 
@@ -374,7 +412,7 @@ export function FocusPageClient() {
 
     const mins =
       newMode === "FOCUS"
-        ? 25
+        ? focusMinutes
         : newMode === "SHORT_BREAK"
           ? 5
           : newMode === "LONG_BREAK"
@@ -565,10 +603,10 @@ export function FocusPageClient() {
             </div>
           </div>
 
-          {/* Custom Duration Input with +/- Controls */}
-          {mode === "CUSTOM" && status === "IDLE" && (
+          {/* Editable Duration Controls for Focus and Custom modes */}
+          {(mode === "FOCUS" || mode === "CUSTOM") && status === "IDLE" && (
             <div className="flex flex-col items-center gap-2 pt-1">
-              <Label htmlFor="custom-duration" className="text-xs text-muted-foreground">
+              <Label htmlFor="duration-input" className="text-xs text-muted-foreground">
                 Duration (minutes):
               </Label>
               <div className="flex items-center gap-3">
@@ -577,26 +615,36 @@ export function FocusPageClient() {
                   variant="outline"
                   size="icon"
                   aria-label="Decrease duration"
-                  disabled={customMinutes <= 5}
+                  disabled={(mode === "FOCUS" ? focusMinutes : customMinutes) <= 5}
                   onClick={() => {
-                    const val = Math.max(5, customMinutes - 5);
-                    setCustomMinutes(val);
-                    setRemainingSeconds(val * 60);
+                    if (mode === "FOCUS") {
+                      const val = Math.max(5, focusMinutes - 5);
+                      setFocusMinutes(val);
+                      setRemainingSeconds(val * 60);
+                    } else {
+                      const val = Math.max(5, customMinutes - 5);
+                      setCustomMinutes(val);
+                      setRemainingSeconds(val * 60);
+                    }
                   }}
                   className="size-11 rounded-full text-lg font-bold shrink-0"
                 >
                   −
                 </Button>
                 <Input
-                  id="custom-duration"
+                  id="duration-input"
                   type="number"
                   min={5}
                   max={180}
                   step={5}
-                  value={customMinutes}
+                  value={mode === "FOCUS" ? focusMinutes : customMinutes}
                   onChange={(e) => {
                     const val = Math.max(5, Math.min(180, Number(e.target.value) || 25));
-                    setCustomMinutes(val);
+                    if (mode === "FOCUS") {
+                      setFocusMinutes(val);
+                    } else {
+                      setCustomMinutes(val);
+                    }
                     setRemainingSeconds(val * 60);
                   }}
                   className="w-20 text-center font-semibold text-lg"
@@ -606,11 +654,17 @@ export function FocusPageClient() {
                   variant="outline"
                   size="icon"
                   aria-label="Increase duration"
-                  disabled={customMinutes >= 180}
+                  disabled={(mode === "FOCUS" ? focusMinutes : customMinutes) >= 180}
                   onClick={() => {
-                    const val = Math.min(180, customMinutes + 5);
-                    setCustomMinutes(val);
-                    setRemainingSeconds(val * 60);
+                    if (mode === "FOCUS") {
+                      const val = Math.min(180, focusMinutes + 5);
+                      setFocusMinutes(val);
+                      setRemainingSeconds(val * 60);
+                    } else {
+                      const val = Math.min(180, customMinutes + 5);
+                      setCustomMinutes(val);
+                      setRemainingSeconds(val * 60);
+                    }
                   }}
                   className="size-11 rounded-full text-lg font-bold shrink-0"
                 >
