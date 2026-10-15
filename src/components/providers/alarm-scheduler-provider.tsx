@@ -8,6 +8,7 @@ import { alarmService } from "@/services/audio/alarm-service";
 import { formatLocalDateKey, isDateOnlyDueDate } from "@/services/calendar/calendar-service";
 import { notificationService } from "@/services/notifications/notification-service";
 import { getPrayerDaySummary } from "@/services/prayer";
+import { computeForbiddenTimes } from "@/services/prayer/forbidden-times";
 import { getLocalPrayerSettings } from "@/services/prayer/prayer-settings-service";
 import { reminderService, type UserReminder } from "@/services/reminders/reminder-service";
 import { taskService } from "@/services/study/task-service";
@@ -175,6 +176,51 @@ export function AlarmSchedulerProvider({ children }: { children: React.ReactNode
           }
         } catch (err) {
           console.warn("User reminder check error:", err);
+        }
+
+        // ==========================================
+        // 4. FORBIDDEN PRAYER TIME CHECK
+        // ==========================================
+        try {
+          const prayerSettings = getLocalPrayerSettings();
+          const forbiddenWindows = computeForbiddenTimes({
+            latitude: prayerSettings.latitude || 23.8103,
+            longitude: prayerSettings.longitude || 90.4125,
+            calculationMethod: prayerSettings.calculationMethod || "karachi",
+            asrMadhhab: prayerSettings.asrMadhhab || "standard",
+            date: now,
+          });
+
+          for (const fw of forbiddenWindows) {
+            const diffMs = now.getTime() - fw.start.getTime();
+            const diffMinutes = diffMs / 60000;
+
+            // Trigger when a forbidden window starts (within 0 to 4 minutes after start)
+            if (diffMinutes >= 0 && diffMinutes < 4) {
+              const notifKey = `notified_forbidden_${fw.name.replace(/\s+/g, "_").toLowerCase()}_${todayKey}`;
+              if (!sessionStorage.getItem(notifKey)) {
+                sessionStorage.setItem(notifKey, "true");
+
+                notificationService.sendForbiddenTimeNotification(
+                  fw.name,
+                  fw.description,
+                  fw.end,
+                );
+
+                const endTimeStr = format(fw.end, "h:mm a");
+                toast.warning(`⚠️ সালাত আদায় নিষিদ্ধ সময় — ${fw.name}`, {
+                  description: `এখন নামাজ পড়া নিষিদ্ধ। ${endTimeStr} পর্যন্ত অপেক্ষা করুন। ${fw.description}`,
+                  duration: 20000,
+                  action: {
+                    label: "Stop Sound",
+                    onClick: () => alarmService.stopAlarm(),
+                  },
+                });
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Forbidden prayer time check error:", err);
         }
       } finally {
         isCheckingRef.current = false;

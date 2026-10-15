@@ -10,7 +10,8 @@ export type NotificationType =
   | "HadithReminder"
   | "QuranReminder"
   | "DhikrReminder"
-  | "RamadanReminder";
+  | "RamadanReminder"
+  | "ForbiddenTimeReminder";
 
 export type NotificationPermissionState =
   | "default"
@@ -42,6 +43,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     QuranReminder: true,
     DhikrReminder: true,
     RamadanReminder: true,
+    ForbiddenTimeReminder: true,
   },
 };
 
@@ -415,6 +417,30 @@ export class NotificationService {
     return this.provider.send(`Iftar Time`, {
       body: "It's time to break your fast. Bismillah.",
       tag: "iftar-reminder",
+    });
+  }
+
+  // ─── Forbidden Prayer Time Notification ──────────────────────────────────
+
+  async sendForbiddenTimeNotification(
+    windowName: string,
+    windowDescription: string,
+    endTime: Date,
+  ): Promise<boolean> {
+    alarmService.playReminderAlarm();
+
+    const prefs = this.getPreferences();
+    if (!prefs.enabled || !prefs.categories.ForbiddenTimeReminder) return false;
+
+    const endTimeStr = endTime.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    return this.provider.send(`⚠️ সালাত আদায় নিষিদ্ধ সময়`, {
+      body: `${windowName} — এখন নামাজ পড়া নিষিদ্ধ। ${endTimeStr} পর্যন্ত অপেক্ষা করুন। ${windowDescription}`,
+      tag: `forbidden-time-${windowName.toLowerCase().replace(/\s+/g, "-")}`,
     });
   }
 }
